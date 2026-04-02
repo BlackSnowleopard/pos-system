@@ -1,0 +1,38 @@
+Module 6: Customer Management System
+You have a great memory! Back in Module 4, we intentionally put a pin in linking receipts to specific buyers until we got here. Now, we are going to build the Customer CRM and a Loyalty Points engine, and safely patch it back into our main Sales checkout!
+
+According to your documentation, Module 6 entails: Registering customers, tracking purchase history, and implementing a loyalty points system.
+
+Proposed Execution Plan
+Phase 1: Database Setup
+[MODIFY] server/schema.sql
+I will append the missing customers table to your database. It will track:
+
+customer_id, name, phone, email, address
+loyalty_points (Integer, defaults to 0).
+I will also execute an SQL ALTER TABLE script to officially tie the customer_id foreign key into our existing sales table!
+
+Phase 2: Backend API Upgrades
+[NEW] server/routes/customers.js
+Full API routes allowing you to fetch, add, update, and delete customer profiles.
+[MODIFY] server/routes/sales.js (The Checkout API)
+I will inject Loyalty Points logic into our Database Transaction. When a sale goes through, if reading a customer_id attached to it, the server will mathematically calculate how much was spent and automatically add that amount as loyalty_points directly to the customer's profile!
+Phase 3: Frontend Functionality (React)
+[NEW] client/src/pages/CustomersPage.jsx
+A dedicated CRM hub accessible from the Dashboard where Managers can view all registered customers, edit their contact info, and view their currently accumulated points.
+[MODIFY] client/src/pages/SalesPage.jsx
+I will slip a new "Customer Select" dropdown into the top of the Shopping Cart panel. This allows the cashier to optionally attach a registered customer to the sale right before hitting checkout!
+Phase 4: Proper Documentation
+documentation/Module6_Customers.md
+Appending the details here into Implementation_Plans_Archive.md.
+User Review Required
+IMPORTANT
+
+Loyalty Point Calculation: Right now, I will program the backend to award 1 point for every $1 spent. (So a $50 sale awards 50 points). Later down the line, we can add logic to physically "spend" or redeem those points for discounts. Does the 1:1 calculation ratio sound good for this project?
+
+IMPORTANT
+
+Role Access: I plan to let Cashiers have access to register new customers directly from the checkout terminal or Customers page (since Cashiers usually sign you up for loyalty cards at the front register). Or, would you prefer only Managers/Admins can add Customers?
+
+Let me know if you approve of these two logic rules and the structural plan!
+
