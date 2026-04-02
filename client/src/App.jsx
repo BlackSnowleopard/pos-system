@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import ProductsPage from './pages/ProductsPage';
 import InventoryPage from './pages/InventoryPage';
 import SalesPage from './pages/SalesPage';
+import CustomersPage from './pages/CustomersPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 function App() {
@@ -43,6 +44,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['Administrator', 'Manager', 'Cashier']}>
                 <SalesPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/customers" 
+            element={
+              <ProtectedRoute allowedRoles={['Administrator', 'Manager', 'Cashier']}>
+                <CustomersPage />
               </ProtectedRoute>
             } 
           />

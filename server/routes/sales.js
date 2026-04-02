@@ -14,10 +14,10 @@ router.use(authenticateToken);
 /**
  * POST /api/sales
  * Processes a completed checkout.
- * Expects a body containing: { cartItems: [{product_id, quantity}], discount, paymentDetails: {method, amountTendered, referenceId} }
+ * Expects a body containing: { cartItems: [{product_id, quantity}], discount, paymentDetails: {method, amountTendered, referenceId}, customer_id }
  */
 router.post('/', async (req, res) => {
-  const { cartItems, discount, paymentDetails } = req.body;
+  const { cartItems, discount, paymentDetails, customer_id } = req.body;
   const user_id = req.user.id; // The cashier processing the sale
 
   // 1. Initial Validation
@@ -79,13 +79,24 @@ router.post('/', async (req, res) => {
     }
     const changeReturned = amountTendered - finalAmount;
 
-    // 4. Create the main Sale record
+    // 4. Create the main Sale record (Module 4 & 6)
     const saleInsert = await client.query(
-      `INSERT INTO sales (user_id, total_amount, discount_applied, payment_method) 
-       VALUES ($1, $2, $3, $4) RETURNING sale_id`,
-      [user_id, finalAmount, discount || 0, paymentDetails.method]
+      `INSERT INTO sales (user_id, customer_id, total_amount, discount_applied, payment_method) 
+       VALUES ($1, $2, $3, $4, $5) RETURNING sale_id`,
+      [user_id, customer_id || null, finalAmount, discount || 0, paymentDetails.method]
     );
     const newSaleId = saleInsert.rows[0].sale_id;
+
+    // Award Loyalty Points if a customer is attached (Module 6)
+    if (customer_id && finalAmount > 0) {
+       // Logic: 1 point per $1 spent mathematically.
+       // Math.floor ensures we give integer point values.
+       const pointsEarned = Math.floor(finalAmount); 
+       await client.query(
+         `UPDATE customers SET loyalty_points = loyalty_points + $1 WHERE customer_id = $2`,
+         [pointsEarned, customer_id]
+       );
+    }
 
     // 5. Create Payment record (Module 5)
     await client.query(

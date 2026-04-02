@@ -82,6 +82,7 @@ const InventoryPage = () => {
                 <Link to="/dashboard">Dashboard</Link>
                 <Link to="/sales">Sales</Link>
                 <Link to="/products">Products</Link>
+                <Link to="/customers">Customers</Link>
                 <Link to="/inventory" className="active">Inventory</Link>
             </nav>
         </div>

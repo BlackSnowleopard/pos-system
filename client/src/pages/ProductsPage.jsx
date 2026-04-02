@@ -113,6 +113,7 @@ const ProductsPage = () => {
                 <Link to="/dashboard">Dashboard</Link>
                 <Link to="/sales">Sales</Link>
                 <Link to="/products" className="active">Products</Link>
+                <Link to="/customers">Customers</Link>
                 <Link to="/inventory">Inventory</Link>
             </nav>
         </div>

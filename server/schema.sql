@@ -61,10 +61,22 @@ CREATE TABLE IF NOT EXISTS inventory_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create Customers Table for Module 6
+CREATE TABLE IF NOT EXISTS customers (
+    customer_id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    phone VARCHAR(50),
+    email VARCHAR(150) UNIQUE,
+    address TEXT,
+    loyalty_points INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create Sales Tables for Module 4
 CREATE TABLE IF NOT EXISTS sales (
     sale_id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+    customer_id INTEGER REFERENCES customers(customer_id) ON DELETE SET NULL,
     total_amount DECIMAL(10, 2) NOT NULL,
     discount_applied DECIMAL(10, 2) DEFAULT 0,
     payment_method VARCHAR(50) NOT NULL CHECK (payment_method IN ('CASH', 'CARD', 'MOBILE_MONEY')),

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../commons/AuthContext';
 import { Link } from 'react-router-dom';
 import ProductScanner from '../components/ProductScanner';
@@ -22,10 +22,27 @@ const SalesPage = () => {
   const [discount, setDiscount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false); // Used to disable buttons while waiting for DB
   
+  // Customer selection state
+  const [customers, setCustomers] = useState([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+
   // Payment Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const token = localStorage.getItem('posToken');
+
+  // Load available customers when terminal opens
+  useEffect(() => {
+    const loadCustomers = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/customers', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) setCustomers(await response.json());
+      } catch (err) { console.error(err); }
+    };
+    loadCustomers();
+  }, [token]);
 
   // Logic: Adding a scanned product to the cart
   const handleAddToCart = (product) => {
@@ -94,7 +111,8 @@ const SalesPage = () => {
         body: JSON.stringify({
           cartItems: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
           discount: discount,
-          paymentDetails: paymentDetails
+          paymentDetails: paymentDetails,
+          customer_id: selectedCustomerId || null
         })
       });
 
@@ -105,6 +123,7 @@ const SalesPage = () => {
         alert(`Sale Checked Out Successfully! Sale ID: ${data.sale_id}`);
         setCart([]);
         setDiscount(0);
+        setSelectedCustomerId('');
         setIsPaymentModalOpen(false);
       } else {
         alert(data.error || 'Checkout failed');
@@ -144,16 +163,34 @@ const SalesPage = () => {
         {/* Left Panel: Component imported from ProductScanner.jsx */}
         <ProductScanner onAddToCart={handleAddToCart} />
         
-        {/* Right Panel: Component imported from ShoppingCart.jsx */}
-        <ShoppingCart 
-          cart={cart}
-          updateQuantity={handleUpdateQuantity}
-          removeItem={handleRemoveItem}
-          discount={discount}
-          setDiscount={setDiscount}
-          onInitiateCheckout={handleInitiateCheckout}
-          isProcessing={isProcessing}
-        />
+        {/* Right Panel: Shopping Cart wrap */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          
+          {/* Customer Selection Block */}
+          <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <h4 style={{ margin: '0 0 0.5rem 0' }}>Attach Customer (Optional)</h4>
+            <select 
+              value={selectedCustomerId} 
+              onChange={(e) => setSelectedCustomerId(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e0' }}
+            >
+              <option value="">-- Walk-in Customer (No Points) --</option>
+              {customers.map(c => (
+                <option key={c.customer_id} value={c.customer_id}>{c.name} ({c.phone || c.email})</option>
+              ))}
+            </select>
+          </div>
+
+          <ShoppingCart 
+            cart={cart}
+            updateQuantity={handleUpdateQuantity}
+            removeItem={handleRemoveItem}
+            discount={discount}
+            setDiscount={setDiscount}
+            onInitiateCheckout={handleInitiateCheckout}
+            isProcessing={isProcessing}
+          />
+        </div>
       </main>
 
       {/* Pop-up Payment Gateway */}

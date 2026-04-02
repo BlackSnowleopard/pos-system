@@ -21,6 +21,7 @@ const Dashboard = () => {
                 <Link to="/dashboard" className="active">Dashboard</Link>
                 <Link to="/sales">Sales</Link>
                 <Link to="/products">Products</Link>
+                <Link to="/customers">Customers</Link>
                 <Link to="/inventory">Inventory</Link>
             </nav>
         </div>
