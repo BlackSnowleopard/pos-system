@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { User, Call, Message, Location, CloseSquare, ShieldDone } from 'react-iconly';
 
 const CustomerFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
   const [formData, setFormData] = useState({
@@ -10,7 +11,6 @@ const CustomerFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
 
   const token = localStorage.getItem('posToken');
 
-  // Fill form if editing
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -33,7 +33,6 @@ const CustomerFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // If we have initialData, we are updating (PUT), otherwise adding (POST)
     const method = initialData ? 'PUT' : 'POST';
     const url = initialData 
       ? `http://localhost:5000/api/customers/${initialData.customer_id}` 
@@ -64,54 +63,83 @@ const CustomerFormModal = ({ isOpen, onClose, onSuccess, initialData }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
-        <h2>{initialData ? 'Edit Customer' : 'Add New Customer'}</h2>
-        <form onSubmit={handleSubmit} className="product-form">
+      <div className="modal-pro glass fade-in" style={{ maxWidth: '480px' }}>
+        <button 
+           onClick={onClose} 
+           style={{ position: 'absolute', right: '1.5rem', top: '1.5rem', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+        >
+          <CloseSquare set="bulk" size={20} />
+        </button>
+
+        <h2 style={{ marginBottom: '2rem' }}>
+          <User set="bulk" primaryColor="var(--primary)" size={24} /> 
+          {initialData ? 'Update Customer Profile' : 'New Member Registration'}
+        </h2>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div className="form-group">
-            <label>Name</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+               <User set="bulk" size={14} /> Full Name <span className="required">*</span>
+            </label>
             <input 
               type="text" 
               name="name" 
+              className="input-field"
+              placeholder="e.g. John Doe"
               value={formData.name} 
               onChange={handleChange} 
               required 
             />
           </div>
           
-          <div className="form-group">
-            <label>Phone Number</label>
-            <input 
-              type="text" 
-              name="phone" 
-              value={formData.phone} 
-              onChange={handleChange} 
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Email Address</label>
-            <input 
-              type="email" 
-              name="email" 
-              value={formData.email} 
-              onChange={handleChange} 
-            />
+          <div className="form-group row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="col">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                   <Call set="bulk" size={14} /> Phone Number
+                </label>
+                <input 
+                  type="text" 
+                  name="phone" 
+                  className="input-field"
+                  placeholder="+251..."
+                  value={formData.phone} 
+                  onChange={handleChange} 
+                />
+            </div>
+            <div className="col">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                   <Message set="bulk" size={14} /> Email Address
+                </label>
+                <input 
+                  type="email" 
+                  name="email" 
+                  className="input-field"
+                  placeholder="john@example.com"
+                  value={formData.email} 
+                  onChange={handleChange} 
+                />
+            </div>
           </div>
 
           <div className="form-group">
-            <label>Physical Address</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              <Location set="bulk" size={14} /> Physical Address
+            </label>
             <textarea 
               name="address" 
+              className="input-field"
+              style={{ minHeight: '80px', paddingTop: '10px' }}
+              placeholder="Enter street address, city..."
               value={formData.address} 
               onChange={handleChange}
               rows="3"
             />
           </div>
           
-          <div className="modal-actions">
+          <div className="modal-actions" style={{ marginTop: '1rem' }}>
             <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-primary">
-                {initialData ? 'Update Customer' : 'Save Customer'}
+            <button type="submit" className="btn-primary" style={{ minWidth: '160px', justifyContent: 'center' }}>
+                <ShieldDone set="bulk" size={18} /> {initialData ? 'Update Member' : 'Create Member'}
             </button>
           </div>
         </form>

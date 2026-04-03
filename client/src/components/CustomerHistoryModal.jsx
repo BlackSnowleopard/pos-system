@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { TimeCircle, ShieldDone, CloseSquare, Calendar, Ticket, Wallet, Call } from 'react-iconly';
 
 const CustomerHistoryModal = ({ isOpen, onClose, customer }) => {
   const [history, setHistory] = useState([]);
@@ -26,46 +27,71 @@ const CustomerHistoryModal = ({ isOpen, onClose, customer }) => {
 
   if (!isOpen || !customer) return null;
 
+  const getMethodIcon = (method) => {
+    switch(method) {
+      case 'CARD': return <Ticket set="bulk" size={14} />;
+      case 'MOBILE_MONEY': return <Call set="bulk" size={14} />;
+      default: return <Wallet set="bulk" size={14} />;
+    }
+  };
+
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '600px' }}>
-        <h2>Purchase History: {customer.name}</h2>
-        <p style={{ color: '#718096', marginBottom: '1.5rem' }}>
-          Total Loyalty Points: <strong>{customer.loyalty_points} pts</strong>
-        </p>
+    <div className="modal-overlay fade-in">
+      <div className="modal-pro glass" style={{ maxWidth: '700px', width: '95%' }}>
+        <button 
+           onClick={onClose} 
+           style={{ position: 'absolute', right: '1.5rem', top: '1.5rem', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+        >
+          <CloseSquare set="bulk" size={20} />
+        </button>
+
+        <h2 style={{ marginBottom: '0.5rem' }}>
+          <TimeCircle set="bulk" primaryColor="var(--primary)" size={24} /> Purchase History
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '2rem' }}>
+            <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{customer.name}</div>
+            <div className="badge" style={{ background: 'var(--primary-glow)', color: 'var(--primary)', border: '1px solid rgba(56, 189, 248, 0.2)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <ShieldDone set="bulk" size={14} /> {customer.loyalty_points} Points Total
+            </div>
+        </div>
 
         {isLoading ? (
-          <p>Loading history...</p>
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-dim)' }}>
+             Fetching transaction logs...
+          </div>
         ) : history.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', background: '#edf2f7', borderRadius: '8px' }}>
-            <p>No past purchases found for this customer.</p>
+          <div style={{ textAlign: 'center', padding: '3rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px dashed var(--border)', color: 'var(--text-dim)' }}>
+            <p>No past purchases found for this member.</p>
           </div>
         ) : (
-          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-            <table className="data-table">
+          <div className="data-table-container" style={{ maxHeight: '420px', overflowY: 'auto' }}>
+            <table className="modern-table">
               <thead>
                 <tr>
                   <th>Sale ID</th>
-                  <th>Date</th>
+                  <th>Date & Time</th>
                   <th>Method</th>
-                  <th>Discount</th>
-                  <th>Total Spent</th>
+                  <th style={{ textAlign: 'right' }}>Total Spent</th>
                 </tr>
               </thead>
               <tbody>
                 {history.map(receipt => (
                   <tr key={receipt.sale_id}>
-                    <td>#{receipt.sale_id}</td>
-                    <td>{new Date(receipt.created_at).toLocaleString()}</td>
+                    <td style={{ fontFamily: 'monospace', color: 'var(--text-dim)' }}>#{receipt.sale_id}</td>
                     <td>
-                      <span style={{ fontSize: '0.8rem', padding: '2px 6px', background: '#e2e8f0', borderRadius: '4px' }}>
-                        {receipt.payment_method}
-                      </span>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                          <Calendar set="light" size={12} primaryColor="var(--text-dim)" />
+                          {new Date(receipt.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                       </div>
                     </td>
-                    <td className="text-danger">
-                      {Number(receipt.discount_applied) > 0 ? `-$${receipt.discount_applied}` : '-'}
+                    <td>
+                      <div className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        {getMethodIcon(receipt.payment_method)} {receipt.payment_method}
+                      </div>
                     </td>
-                    <td style={{ fontWeight: 'bold' }}>${Number(receipt.total_amount).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--primary)', fontSize: '1rem' }}>
+                      ${Number(receipt.total_amount).toFixed(2)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -73,9 +99,9 @@ const CustomerHistoryModal = ({ isOpen, onClose, customer }) => {
           </div>
         )}
 
-        <div className="modal-actions" style={{ marginTop: '2rem' }}>
-          <button type="button" className="btn-primary" onClick={onClose} style={{ width: '100%' }}>
-            Close
+        <div className="modal-actions" style={{ borderTop: 'none', marginTop: '1rem' }}>
+          <button type="button" className="btn-primary" onClick={onClose} style={{ width: '100%', justifyContent: 'center' }}>
+            Dismiss
           </button>
         </div>
       </div>

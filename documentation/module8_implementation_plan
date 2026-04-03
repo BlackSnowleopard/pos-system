@@ -1,0 +1,43 @@
+
+Module 8: Reporting and Analytics
+This module provides business intelligence for the POS system, allowing Administrators and Managers to track performance, identify top products, and understand inventory value.
+
+Proposed Changes
+Database Layer
+No new tables are required. We will use SQL aggregation functions (SUM, COUNT, GROUP BY) on existing tables: sales, sales_items, products, and payments.
+
+Backend API
+[NEW] server/routes/reports.js
+Create endpoints restricted to Administrator and Manager roles:
+
+GET /api/reports/summary: Aggregate total revenue and sale counts for today, this week, and this month.
+GET /api/reports/top-products: Identify the top 5 best-selling products by quantity.
+GET /api/reports/inventory-valuation: Calculate the total value of stock currently on hand (price * quantity).
+[MODIFY] server/server.js
+Register the new /api/reports routes.
+
+Frontend UI
+[NEW] client/src/pages/ReportsPage.jsx
+A new page visible only to Managers/Admins:
+
+KPI Cards: Visual summaries of revenue and inventory value.
+Top Products Table: A list showing the most popular items.
+Recent Sales Table: A brief look at the most recent transactions across the store.
+[MODIFY] client/src/App.jsx
+Add the /reports route protected by Administrator or Manager roles.
+
+[MODIFY] Navigation Links
+Include a "Reports" link in the navbar for authorized users.
+
+User Review Required
+IMPORTANT
+
+Visualization Choice: As discussed previously, we will use professional CSS cards and tables for metrics instead of complex graphing libraries to keep the project lightweight and easy to maintain. Does this still work for you?
+
+Verification Plan
+Automated Tests
+Test endpoints using curl or browser tools once implemented.
+Verify that a Cashier user cannot access the /api/reports routes (RBAC check).
+Manual Verification
+Perform a few sales and verify that the reports update in real-time.
+Check that the total inventory valuation matches the products list math.

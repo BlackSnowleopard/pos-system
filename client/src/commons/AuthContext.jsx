@@ -11,7 +11,12 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('posToken');
     const userData = localStorage.getItem('posUser');
     if (token && userData) {
-      setUser(JSON.parse(userData));
+      try {
+        setUser(JSON.parse(userData));
+      } catch (err) {
+        console.error('Failed to parse user data from localStorage', err);
+        localStorage.removeItem('posUser');
+      }
     }
     setLoading(false);
   }, []);

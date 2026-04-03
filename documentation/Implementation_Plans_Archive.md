@@ -22,3 +22,19 @@ This document serves as the historical record of the exact implementation plans 
 ## Module 5: Payment Processing System
 * Designed to strictly use Mock/Provisions instead of real API gateways for safety.
 * Separated abstract payment details into the `payments` table to calculate `change_given` and track `auth_codes`.
+
+## Module 6: Customer Management System
+* Established `customers` table with a foreign key on the `sales` table.
+* Developed a Loyalty Points engine that awards 1 point per $1 spent automatically.
+* Secured customer operations with RBAC, ensuring Cashiers can add but not delete profiles.
+
+## Module 7: Receipt Generation System
+* Implemented complex multi-table SQL joins on the backend to gather all transaction metadata.
+* Developed a professional CSS-based receipt component for thermal printer emulation.
+* Configured native browser printing rules with `@media print` to isolate the receipt on physical paper.
+
+## Module 8: Reporting and Analytics System
+* Leveraged SQL aggregation functions (`SUM`, `COUNT`, `date_trunc`) for real-time sales reporting.
+* Built a manager-specific dashboard with KPI cards for revenue, traffic, and inventory valuation.
+* Identified top-selling products and summarized sales activity for daily, weekly, and monthly intervals.
+

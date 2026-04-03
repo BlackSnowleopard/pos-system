@@ -1,0 +1,45 @@
+ase 9: UI/UX & HCI Design Polish
+This phase transforms the functional POS system into a premium, state-of-the-art application. We will focus on modern aesthetics, consistent design patterns, and enhanced Human-Computer Interaction (HCI) principles.
+
+User Review Required
+IMPORTANT
+
+Design Direction: I am proposing a "Modern Dark/Glassmorphic" theme by default, as it feels high-end and reduces eye strain for long-shift cashiers. Would you prefer a Clean Light Mode, a Sleek Dark Mode, or a toggle for both?
+
+Iconography: I will use Lucide-React icons for the interface. This will require a quick npm install lucide-react. Do you approve adding this dependency?
+
+Proposed Changes
+1. The Foundation (CSS Design System)
+[MODIFY] client/src/assets/css/styles.css
+Complete overhaul of the CSS variables.
+Implementation of a "Glassmorphism" utility set.
+Definition of a premium typography scale using 'Inter' or 'Outfit'.
+Addition of micro-animation classes (hover-scale, fade-in, slide-up).
+2. Global Architecture (HCI: Consistency & Standards)
+[NEW] client/src/components/MainLayout.jsx
+A reusable wrapper for all authenticated pages.
+Sidebar: Persistent navigation with high-visibility active states.
+Topbar: User status, notifications, and clear logout access.
+[MODIFY] client/src/App.jsx
+Wrap protected routes in the new MainLayout.
+3. Visual Overhaul (Aesthetics & Premium Feel)
+[MODIFY] client/src/pages/LoginPage.jsx
+Create a "Wowed" first impression with a dynamic background and a glassmorphic login card.
+Add input focus effects and improved error states.
+[MODIFY] client/src/pages/SalesPage.jsx
+HCI: Efficiency of Use: Optimize the terminal layout. Larger touch targets, clearer pricing hierarchy.
+Smooth transitions when items enter/exit the cart.
+[MODIFY] Pages: Products, Inventory, Customers, Reports
+Transition from plain tables to Modern Data Cards or Refined Data Grids.
+Use meaningful colors (e.g., semantic greens for sales, soft reds for low stock).
+4. Interactive Feedback (HCI: System Status)
+Implementation of a global Toast Notification system for better "Visibility of System Status."
+Loading skeletons for data-heavy sections (Reports/Inventory).
+Verification Plan
+Automated Verification
+Lighthouse Audit: Check for performance, accessibility, and best practices.
+Browser Testing: Verify glassmorphic effects and animations across Chrome/Edge.
+Manual Verification
+Verify that every "Add/Delete/Edit" action provides clear visual feedback (Toasts).
+Ensure the "Low Stock" warning is visually prominent but not distracting (HCI: Error Prevention).
+Check responsiveness on "Tablet" view (common for POS hardware).

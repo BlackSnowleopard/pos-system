@@ -142,4 +142,53 @@ router.post('/', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/sales/:id/receipt
+ * Module 7: Generates a complete comprehensive receipt for a given sale.
+ * Accessible to Cashiers, Managers, Administrators.
+ */
+router.get('/:id/receipt', async (req, res) => {
+  try {
+    const saleId = req.params.id;
+
+    // 1. Fetch Header Details (Joining 4 tables!)
+    const headerQuery = await pool.query(
+      `SELECT 
+         s.sale_id, s.total_amount, s.discount_applied, s.created_at, 
+         u.name as cashier_name,
+         c.name as customer_name, c.loyalty_points,
+         p.payment_method, p.amount_tendered, p.change_returned, p.transaction_reference
+       FROM sales s
+       LEFT JOIN users u ON s.user_id = u.user_id
+       LEFT JOIN customers c ON s.customer_id = c.customer_id
+       LEFT JOIN payments p ON s.sale_id = p.sale_id
+       WHERE s.sale_id = $1`,
+      [saleId]
+    );
+
+    if (headerQuery.rows.length === 0) {
+      return res.status(404).json({ error: 'Receipt not found.' });
+    }
+
+    // 2. Fetch the Line Items (Joining 2 tables!)
+    const itemsQuery = await pool.query(
+      `SELECT si.quantity, si.price_at_sale, pr.product_name
+       FROM sales_items si
+       JOIN products pr ON si.product_id = pr.product_id
+       WHERE si.sale_id = $1`,
+      [saleId]
+    );
+
+    // 3. Package and ship the finalized Receipt object
+    res.json({
+      header: headerQuery.rows[0],
+      items: itemsQuery.rows
+    });
+
+  } catch (error) {
+    console.error('Receipt Generation Error:', error.message);
+    res.status(500).json({ error: 'Failed to generate receipt' });
+  }
+});
+
 module.exports = router;

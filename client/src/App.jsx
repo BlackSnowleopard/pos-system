@@ -1,25 +1,29 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './commons/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import ProductsPage from './pages/ProductsPage';
 import InventoryPage from './pages/InventoryPage';
 import SalesPage from './pages/SalesPage';
 import CustomersPage from './pages/CustomersPage';
+import ReportsPage from './pages/ReportsPage';
 import ProtectedRoute from './routes/ProtectedRoute';
+import MainLayout from './components/MainLayout';
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <ThemeProvider>
+        <Router>
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route 
             path="/dashboard" 
             element={
               <ProtectedRoute allowedRoles={['Administrator', 'Manager', 'Cashier']}>
-                <Dashboard />
+                <MainLayout><Dashboard /></MainLayout>
               </ProtectedRoute>
             } 
           />
@@ -27,7 +31,7 @@ function App() {
             path="/products" 
             element={
               <ProtectedRoute allowedRoles={['Administrator', 'Manager', 'Cashier']}>
-                <ProductsPage />
+                <MainLayout><ProductsPage /></MainLayout>
               </ProtectedRoute>
             } 
           />
@@ -35,7 +39,7 @@ function App() {
             path="/inventory" 
             element={
               <ProtectedRoute allowedRoles={['Administrator', 'Manager', 'Cashier']}>
-                <InventoryPage />
+                <MainLayout><InventoryPage /></MainLayout>
               </ProtectedRoute>
             } 
           />
@@ -43,7 +47,7 @@ function App() {
             path="/sales" 
             element={
               <ProtectedRoute allowedRoles={['Administrator', 'Manager', 'Cashier']}>
-                <SalesPage />
+                <MainLayout><SalesPage /></MainLayout>
               </ProtectedRoute>
             } 
           />
@@ -51,12 +55,21 @@ function App() {
             path="/customers" 
             element={
               <ProtectedRoute allowedRoles={['Administrator', 'Manager', 'Cashier']}>
-                <CustomersPage />
+                <MainLayout><CustomersPage /></MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/reports" 
+            element={
+              <ProtectedRoute allowedRoles={['Administrator', 'Manager']}>
+                <MainLayout><ReportsPage /></MainLayout>
               </ProtectedRoute>
             } 
           />
         </Routes>
-      </Router>
+        </Router>
+      </ThemeProvider>
     </AuthProvider>
   );
 }
