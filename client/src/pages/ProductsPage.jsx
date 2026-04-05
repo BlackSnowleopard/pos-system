@@ -160,7 +160,7 @@ const ProductsPage = () => {
                   <td>#{product.product_id}</td>
                   <td style={{ fontWeight: 600 }}>{product.product_name}</td>
                   <td><span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>{product.category || 'General'}</span></td>
-                  <td style={{ color: 'var(--success)', fontWeight: 700 }}>${Number(product.price).toFixed(2)}</td>
+                  <td style={{ color: 'var(--success)', fontWeight: 700 }}>₵{Number(product.price).toFixed(2)}</td>
                   <td>
                       <span className={`badge ${product.quantity <= (product.low_stock_threshold || 10) ? 'badge-danger' : 'badge-success'}`}>
                           {product.quantity} in stock

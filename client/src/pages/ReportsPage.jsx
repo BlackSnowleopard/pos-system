@@ -71,7 +71,7 @@ const ReportsPage = () => {
             <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Daily Revenue</span>
             <Graph set="bulk" primaryColor="var(--success)" size={24} />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>${summary?.today.revenue.toFixed(2) || '0.00'}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>₵{summary?.today.revenue.toFixed(2) || '0.00'}</div>
           <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
              From {summary?.today.count} transactions
           </div>
@@ -106,7 +106,7 @@ const ReportsPage = () => {
             <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Inventory Value</span>
             <Category set="bulk" primaryColor="var(--secondary)" size={20} />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>${inventoryStatus.total_value.toFixed(2)}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>₵{inventoryStatus.total_value.toFixed(2)}</div>
           <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
              Current assets valuation
           </div>
@@ -136,7 +136,7 @@ const ReportsPage = () => {
                     <td style={{ textAlign: 'center' }}>
                       <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>{c.transaction_count} units</span>
                     </td>
-                    <td style={{ textAlign: 'right', color: 'var(--success)', fontWeight: 700 }}>${Number(c.total_revenue).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', color: 'var(--success)', fontWeight: 700 }}>₵{Number(c.total_revenue).toFixed(2)}</td>
                   </tr>
                 ))}
                 {cashierPerformance.length === 0 && <tr><td colSpan="3" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-dim)' }}>No activity found.</td></tr>}
@@ -194,7 +194,7 @@ const ReportsPage = () => {
                     <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(sale.created_at).toLocaleString()}</td>
                     <td style={{ fontWeight: 600 }}>{sale.cashier_name}</td>
                     <td><span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>{sale.payment_method}</span></td>
-                    <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--primary)' }}>${Number(sale.total_amount).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--primary)' }}>₵{Number(sale.total_amount).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>

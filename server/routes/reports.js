@@ -61,11 +61,11 @@ router.get('/summary', async (req, res) => {
 router.get('/top-products', async (req, res) => {
   try {
     const topProductsRes = await pool.query(
-      `SELECT pr.product_name, SUM(si.quantity) as total_sold
+      `SELECT pr.product_name, SUM(si.quantity) as total_sold, SUM(si.quantity * si.price_at_sale) as total_revenue
        FROM sales_items si
        JOIN products pr ON si.product_id = pr.product_id
        GROUP BY pr.product_name
-       ORDER BY total_sold DESC
+       ORDER BY total_revenue DESC
        LIMIT 5`
     );
     res.json(topProductsRes.rows);

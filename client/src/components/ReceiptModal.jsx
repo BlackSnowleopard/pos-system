@@ -53,7 +53,7 @@ const ReceiptModal = ({ isOpen, onClose, receiptData }) => {
                   <tr key={idx}>
                     <td style={{ textAlign: 'left', padding: '6px 0' }}>{item.product_name}</td>
                     <td style={{ textAlign: 'center', padding: '6px 0' }}>{item.quantity}</td>
-                    <td style={{ textAlign: 'right', padding: '6px 0' }}>${(item.quantity * item.price_at_sale).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right', padding: '6px 0' }}>₵{(item.quantity * item.price_at_sale).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -62,28 +62,28 @@ const ReceiptModal = ({ isOpen, onClose, receiptData }) => {
             <div className="receipt-financials" style={{ fontSize: '0.85rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <span>Subtotal:</span>
-                <span>${(Number(header.total_amount) + Number(header.discount_applied)).toFixed(2)}</span>
+                <span>₵{(Number(header.total_amount) + Number(header.discount_applied)).toFixed(2)}</span>
               </div>
               {Number(header.discount_applied) > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', color: '#dc2626' }}>
                   <span>Discount:</span>
-                  <span>-${Number(header.discount_applied).toFixed(2)}</span>
+                  <span>-₵{Number(header.discount_applied).toFixed(2)}</span>
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', paddingTop: '8px', borderTop: '2px solid #1e293b', fontWeight: 900, fontSize: '1.1rem' }}>
                 <span>TOTAL:</span>
-                <span>${Number(header.total_amount).toFixed(2)}</span>
+                <span>₵{Number(header.total_amount).toFixed(2)}</span>
               </div>
 
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed #cbd5e1', fontSize: '0.75rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <span>PAID BY {header.payment_method}</span>
-                  <span>${Number(header.amount_tendered).toFixed(2)}</span>
+                  <span>₵{Number(header.amount_tendered).toFixed(2)}</span>
                 </div>
                 {header.payment_method === 'CASH' && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
                     <span>CHANGE DUE:</span>
-                    <span>${Number(header.change_returned).toFixed(2)}</span>
+                    <span>₵{Number(header.change_returned).toFixed(2)}</span>
                   </div>
                 )}
                 {header.transaction_reference && (
