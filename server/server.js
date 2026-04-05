@@ -8,8 +8,9 @@ const inventoryRoutes = require('./routes/inventory');
 const salesRoutes = require('./routes/sales');
 const customerRoutes = require('./routes/customers');
 const reportRoutes = require('./routes/reports');
+const paymentRoutes = require('./routes/payments');
 
-// Initialize the Express application
+// Initialize Express application
 const app = express();
 
 // Middlewares
@@ -24,6 +25,7 @@ app.use('/api/inventory', inventoryRoutes); // Module 3: Inventory adjustments a
 app.use('/api/sales', salesRoutes);       // Module 4: Shopping Cart and Checkout
 app.use('/api/customers', customerRoutes); // Module 6: Customers & Loyalty Points
 app.use('/api/reports', reportRoutes);     // Module 8: Reporting & Analytics
+app.use('/api/payments', paymentRoutes); // Module 5: Payment Processing (Paystack)
 
 // Basic route for testing
 app.get('/', (req, res) => {

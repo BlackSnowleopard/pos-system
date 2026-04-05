@@ -1,11 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, Ticket, Call, CloseSquare, ShieldDone } from 'react-iconly';
+import { usePaystackPayment } from 'react-paystack';
 
 const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
   const [method, setMethod] = useState('CASH');
   const [amountTendered, setAmountTendered] = useState('');
   const [referenceId, setReferenceId] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [changeDue, setChangeDue] = useState(0);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  // Paystack configuration
+  const config = {
+    reference: (new Date()).getTime().toString(),
+    email: method === 'CARD' && referenceId ? referenceId : 'guest@pos.com', // Valid format required
+    amount: totalDue * 100, // Convert to kobo/cents
+    currency: 'GHS',
+    metadata: {
+      phone_number: customerPhone,
+      custom_fields: [
+        { display_name: 'Payment Method', variable_name: 'payment_method', value: 'MOBILE_MONEY' }
+      ]
+    },
+    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_922ccd62233975c0edefdfb52ee3661c695a9b45'
+  };
+
+  const initializePayment = usePaystackPayment(config);
+
+  const handlePaystackSuccess = (response) => {
+    // Don't trust frontend response alone - send to backend for verification
+    onConfirm({
+      method: 'MOBILE_MONEY',
+      amountTendered: totalDue,
+      referenceId: response.reference,
+      customerPhone
+    });
+    setIsProcessingPayment(false);
+    onClose();
+  };
+
+  const handlePaystackClose = () => {
+    setIsProcessingPayment(false);
+    // Payment was cancelled - don't clear cart
+  };
 
   useEffect(() => {
     if (method === 'CASH') {
@@ -26,6 +63,8 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
       setMethod('CASH');
       setAmountTendered(totalDue.toString());
       setReferenceId('');
+      setCustomerPhone('');
+      setIsProcessingPayment(false);
     }
   }, [isOpen, totalDue]);
 
@@ -33,16 +72,33 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (Number(amountTendered) < totalDue) {
-       alert("Amount tendered cannot be less than total due!");
-       return;
-    }
     
-    onConfirm({
-      method,
-      amountTendered: Number(amountTendered),
-      referenceId: method !== 'CASH' ? referenceId : null
-    });
+    if (method === 'CASH') {
+      if (Number(amountTendered) < totalDue) {
+         alert("Amount tendered cannot be less than total due!");
+         return;
+      }
+      onConfirm({
+        method: 'CASH',
+        amountTendered: Number(amountTendered),
+        referenceId: null
+      });
+    } else if (method === 'MOBILE_MONEY') {
+      // Validate Ghana phone number
+      const phoneRegex = /^0[2-9]\d{8}$/;
+      if (!phoneRegex.test(customerPhone)) {
+        alert('Please enter a valid Ghana mobile number (e.g., 024XXXXXXX)');
+        return;
+      }
+      
+      setIsProcessingPayment(true);
+      // Initialize Paystack payment
+      initializePayment(handlePaystackSuccess, handlePaystackClose);
+    } else if (method === 'CARD') {
+      // For card payments, we'd also use Paystack but without phone number
+      setIsProcessingPayment(true);
+      initializePayment(handlePaystackSuccess, handlePaystackClose);
+    }
   };
 
   return (
@@ -143,30 +199,64 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
             </div>
           )}
 
-          {method !== 'CASH' && (
+          {method === 'MOBILE_MONEY' && (
             <div className="fade-in">
               <div className="form-group">
-                <label style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{method === 'CARD' ? 'Last 4 Digits / Auth Code' : 'Transaction / Reference ID'}</label>
+                <label style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Customer Phone Number</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }}>+233</span>
+                  <input 
+                    type="tel" 
+                    className="input-field"
+                    style={{ background: 'rgba(0,0,0,0.2)', paddingLeft: '50px' }}
+                    value={customerPhone} 
+                    onChange={(e) => setCustomerPhone(e.target.value)} 
+                    required 
+                    placeholder="053XXXXXXX"
+                    pattern="0[2-9][0-9]{8}"
+                  />
+                </div>
+                <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                  Customer will receive a USSD prompt to confirm payment of <strong>₵{totalDue.toFixed(2)}</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {method === 'CARD' && (
+            <div className="fade-in">
+              <div className="form-group">
+                <label style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Cardholder Email (Required)</label>
                 <input 
-                  type="text" 
+                  type="email" 
                   className="input-field"
                   style={{ background: 'rgba(0,0,0,0.2)' }}
                   value={referenceId} 
                   onChange={(e) => setReferenceId(e.target.value)} 
                   required 
-                  placeholder="Enter reference info..."
+                  placeholder="customer@example.com"
                 />
               </div>
               <div style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.8rem', marginTop: '1rem' }}>
-                Authorization processed for <strong>₵{totalDue.toFixed(2)}</strong>
+                Customer will be redirected to secure payment page for <strong>₵{totalDue.toFixed(2)}</strong>
               </div>
             </div>
           )}
 
           <div className="modal-actions" style={{ borderTop: 'none', marginTop: '1rem' }}>
-            <button type="button" className="btn-secondary" onClick={onClose} style={{ flex: 1, padding: '14px' }}>Cancel</button>
-            <button type="submit" className="btn-primary" style={{ flex: 2, padding: '14px', justifyContent: 'center' }}>
-                <ShieldDone set="bulk" size={18} /> Finalize Sale
+            <button type="button" className="btn-secondary" onClick={onClose} style={{ flex: 1, padding: '14px' }} disabled={isProcessingPayment}>Cancel</button>
+            <button type="submit" className="btn-primary" style={{ flex: 2, padding: '14px', justifyContent: 'center' }} disabled={isProcessingPayment}>
+              {isProcessingPayment ? (
+                <>
+                  <div style={{ width: '16px', height: '16px', border: '2px solid white', borderTop: '2px solid transparent', borderRadius: '50%', marginRight: '8px', animation: 'spin 1s linear infinite' }}></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  {method === 'CASH' ? <ShieldDone set="bulk" size={18} /> : <Wallet set="bulk" size={18} />}
+                  {method === 'CASH' ? 'Finalize Sale' : 'Pay with Paystack'}
+                </>
+              )}
             </button>
           </div>
         </form>

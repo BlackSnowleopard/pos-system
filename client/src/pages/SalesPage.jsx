@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../commons/AuthContext';
+import ShoppingCart from '../components/ShoppingCart';
 import PaymentModal from '../components/PaymentModal';
 import ReceiptModal from '../components/ReceiptModal';
 import { Search, Buy, Delete, Plus, Wallet, Ticket, ChevronLeft } from 'react-iconly';
@@ -31,6 +32,7 @@ const SalesPage = () => {
   
   const [cart, setCart] = useState([]); 
   const [discount, setDiscount] = useState(0);
+  const [discountType, setDiscountType] = useState('percentage');
   const [isProcessing, setIsProcessing] = useState(false); 
   const [paymentMethod, setPaymentMethod] = useState('CASH');
   
@@ -85,7 +87,10 @@ const SalesPage = () => {
   };
 
   const subtotal = cart.reduce((t, i) => t + (i.price * i.quantity), 0);
-  const total = Math.max(0, subtotal - discount);
+  const discountAmount = discountType === 'percentage' 
+    ? (subtotal * discount) / 100 
+    : discount;
+  const total = Math.max(0, subtotal - discountAmount);
 
   const handleAddToCart = (product) => {
     if (product.quantity <= 0) return;
@@ -124,12 +129,36 @@ const SalesPage = () => {
   const handleCheckout = async (paymentDetails) => {
     setIsProcessing(true);
     try {
+      // If it's a MoMo or Card payment, verify with backend first
+      if (paymentDetails.method === 'MOBILE_MONEY' || paymentDetails.method === 'CARD') {
+        const verifyResponse = await fetch('http://localhost:5000/api/payments/verify', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+          },
+          body: JSON.stringify({ reference: paymentDetails.referenceId })
+        });
+        
+        const verifyData = await verifyResponse.json();
+        
+        if (!verifyData.success) {
+          alert(`Payment verification failed: ${verifyData.error}`);
+          setIsProcessing(false);
+          return;
+        }
+        
+        // Update payment details with verified data
+        paymentDetails.verifiedAmount = verifyData.data.amount / 100; // Convert back from kobo
+        paymentDetails.customerPhone = verifyData.data.customer?.phone;
+      }
+      
       const response = await fetch('http://localhost:5000/api/sales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           cartItems: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
-          discount,
+          discount: discountAmount,
           paymentDetails,
           customer_id: selectedCustomerId || null
         })
@@ -170,118 +199,17 @@ const SalesPage = () => {
   return (
     <div className="sales-layout">
       {/* ===== LEFT PANEL: Cart ===== */}
-      <div className="sales-cart-panel">
-        {/* Large Total Display */}
-        <div className="total-display">
-          <div className="total-label">Total</div>
-          <div className="total-amount">₵{total.toFixed(2)}</div>
-        </div>
-
-        {/* Current Sale Section */}
-        <div className="cart-section" style={{ borderBottom: '1px solid var(--border)' }}>
-          <div className="cart-section-header">
-            <h4>Current Sale</h4>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Discount (₵):</span>
-              <input 
-                type="number" 
-                className="input-field"
-                style={{ width: '70px', padding: '5px 8px', fontSize: '0.8rem', textAlign: 'center' }}
-                value={discount} 
-                onChange={(e) => setDiscount(Number(e.target.value))}
-                min="0"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Cart Items */}
-        <div className="cart-items-list">
-          {cart.length === 0 ? (
-            <div className="cart-empty">
-              <Buy set="bulk" size={36} style={{ opacity: 0.15 }} />
-              <p>Cart is empty.</p>
-              <p style={{ fontSize: '0.75rem' }}>Scan an item to begin</p>
-            </div>
-          ) : (
-            cart.map(item => (
-              <div key={item.product_id} className="cart-item">
-                <span className="item-name">{item.product_name}</span>
-                <div className="item-qty-controls">
-                  <button onClick={() => handleUpdateQuantity(item.product_id, -1)}>
-                    <MinusIcon size={12} />
-                  </button>
-                  <span>{item.quantity}</span>
-                  <button onClick={() => handleUpdateQuantity(item.product_id, 1)}>
-                    <Plus set="light" size={12} />
-                  </button>
-                </div>
-                <span className="item-total">₵{(item.price * item.quantity).toFixed(2)}</span>
-                <button className="item-remove" onClick={() => handleRemoveItem(item.product_id)}>
-                  <Delete set="bulk" size={14} />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Footer: Totals + Payment */}
-        <div className="cart-footer-section">
-          <div className="cart-subtotals">
-            <div className="subtotal-row">
-              <span>Subtotal</span>
-              <span>₵{subtotal.toFixed(2)}</span>
-            </div>
-            {discount > 0 && (
-              <div className="subtotal-row" style={{ color: 'var(--accent)' }}>
-                <span>Discount</span>
-                <span>-₵{discount.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="total-row">
-              <span>Total</span>
-              <span>₵{total.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {/* Payment Method */}
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.75rem', marginBottom: '4px' }}>Payment method</div>
-          <div className="payment-methods">
-            {['CASH', 'MOBILE_MONEY', 'CARD'].map(m => (
-              <button 
-                key={m} 
-                className={`payment-method-btn ${paymentMethod === m ? 'active' : ''}`}
-                onClick={() => setPaymentMethod(m)}
-              >
-                {m === 'CASH' ? 'Cash' : m === 'MOBILE_MONEY' ? 'MoMo' : 'Card'}
-              </button>
-            ))}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="cart-action-buttons">
-            <button 
-              className="btn-secondary" 
-              style={{ flex: 1 }}
-              onClick={() => { setCart([]); setDiscount(0); }}
-            >
-              Cancel
-            </button>
-            <button 
-              className="btn-primary" 
-              style={{ flex: 2 }}
-              disabled={cart.length === 0 || isProcessing}
-              onClick={() => setIsPaymentModalOpen(true)}
-            >
-              {isProcessing ? 'Processing...' : (
-                <>
-                  <Wallet set="bulk" size={16} /> Checkout
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+      <ShoppingCart 
+        cart={cart}
+        updateQuantity={handleUpdateQuantity}
+        removeItem={handleRemoveItem}
+        discount={discount}
+        setDiscount={setDiscount}
+        discountType={discountType}
+        setDiscountType={setDiscountType}
+        onInitiateCheckout={() => setIsPaymentModalOpen(true)}
+        isProcessing={isProcessing}
+      />
 
       {/* ===== RIGHT PANEL: Products ===== */}
       <div className="sales-products-panel">

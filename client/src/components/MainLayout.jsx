@@ -192,14 +192,28 @@ const MainLayout = ({ children }) => {
 
       <main className="main-content">
         <header className="page-header">
-          <h2>{pageTitle}</h2>
-          
-          <div className="header-search">
-            <span className="search-icon">
-              <Search set="light" size={16} primaryColor="currentColor" />
-            </span>
-            <input type="text" placeholder="Search analytics..." />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {isCollapsed && (
+              <button 
+                className="collapse-toggle" 
+                onClick={handleCollapse} 
+                title="Expand Sidebar"
+                style={{ margin: 0 }}
+              >
+                <CollapseIcon size={16} />
+              </button>
+            )}
+            <h2>{pageTitle}</h2>
           </div>
+          
+          {(location.pathname === '/dashboard' || location.pathname === '/reports') && (
+            <div className="header-search">
+              <span className="search-icon">
+                <Search set="light" size={16} primaryColor="currentColor" />
+              </span>
+              <input type="text" placeholder="Search analytics..." />
+            </div>
+          )}
         </header>
 
         <div className="page-body fade-in">

@@ -14,120 +14,129 @@ const ShoppingCart = ({
   removeItem, 
   discount, 
   setDiscount, 
+  discountType,
+  setDiscountType,
   onInitiateCheckout,
   isProcessing
 }) => {
 
   const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const total = Math.max(0, subtotal - discount);
+  const discountAmount = discountType === 'percentage' 
+    ? (subtotal * discount) / 100 
+    : discount;
+  const total = Math.max(0, subtotal - discountAmount);
 
   return (
-    <div className="cart-panel fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div className="cart-header glass" style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)' }}>
-        <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1rem' }}>
-          <Buy set="bulk" primaryColor="var(--primary)" size={20} /> Active Transaction
-        </h3>
-        <span className="badge badge-success" style={{ marginLeft: 'auto', fontSize: '0.7rem' }}>
-          {cart.length} items
-        </span>
+    <div className="sales-cart-panel fade-in">
+      <div className="total-display">
+        <div className="total-label">Total Due</div>
+        <div className="total-amount">₵{total.toFixed(2)}</div>
       </div>
 
-      {/* Cart Items List */}
-      <div className="cart-items" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+      <div className="cart-section">
+        <div className="cart-section-header">
+          <h4>Active Transaction</h4>
+          <span className="badge badge-success">
+            {cart.length} items
+          </span>
+        </div>
+      </div>
+
+      <div className="cart-items-list">
         {cart.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-dim)', textAlign: 'center' }}>
-            <Buy set="bulk" size={48} style={{ marginBottom: '1rem', opacity: 0.2 }} />
+          <div className="cart-empty">
+            <Buy set="bulk" size={48} />
             <p>Cart is currently empty.</p>
-            <p style={{ fontSize: '0.8rem' }}>Scan or select products to begin.</p>
+            <p style={{ fontSize: '0.75rem' }}>Scan or select products to begin.</p>
           </div>
         ) : (
           cart.map(item => (
-            <div key={item.product_id} className="cart-item glass" style={{ 
-              marginBottom: '0.75rem', 
-              padding: '1rem', 
-              display: 'grid', 
-              gridTemplateColumns: '1fr auto auto', 
-              alignItems: 'center',
-              gap: '12px',
-              border: '1px solid rgba(255,255,255,0.03)'
-            }}>
+            <div key={item.product_id} className="cart-item">
               <div className="item-info">
-                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{item.product_name}</div>
-                <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>${Number(item.price).toFixed(2)} / unit</div>
+                <div className="item-name">{item.product_name}</div>
+                <div className="item-price-unit">₵{Number(item.price).toFixed(2)} / unit</div>
               </div>
               
-              <div className="item-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '8px' }}>
-                <button 
-                  onClick={() => updateQuantity(item.product_id, -1)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}
-                >
+              <div className="item-qty-controls">
+                <button onClick={() => updateQuantity(item.product_id, -1)}>
                   <MinusIcon size={14} />
                 </button>
-                <span style={{ minWidth: '20px', textAlign: 'center', fontWeight: 700, fontSize: '0.85rem' }}>{item.quantity}</span>
-                <button 
-                  onClick={() => updateQuantity(item.product_id, 1)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}
-                >
+                <span>{item.quantity}</span>
+                <button onClick={() => updateQuantity(item.product_id, 1)}>
                   <Plus set="light" size={14} />
                 </button>
               </div>
               
-              <div className="item-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.9rem', minWidth: '60px', textAlign: 'right' }}>
-                  ${(item.price * item.quantity).toFixed(2)}
-                </div>
-                <button 
-                  onClick={() => removeItem(item.product_id)}
-                  style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', opacity: 0.6 }}
-                >
-                  <Delete set="bulk" size={16} />
-                </button>
+              <div className="item-total">
+                ₵{(item.price * item.quantity).toFixed(2)}
               </div>
+              
+              <button className="item-remove" onClick={() => removeItem(item.product_id)}>
+                <Delete set="bulk" size={16} />
+              </button>
             </div>
           ))
         )}
       </div>
 
-      {/* Premium Checkout Footer */}
-      <div className="cart-footer glass" style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'rgba(15, 23, 42, 0.95)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          <span>Subtotal</span>
-          <span>${subtotal.toFixed(2)}</span>
-        </div>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent)', fontSize: '0.9rem' }}>
-            <Ticket set="bulk" size={14} /> Discount
-          </span>
-          <div style={{ position: 'relative', width: '100px' }}>
-             <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.8rem', color: 'var(--text-dim)' }}>$</span>
-             <input 
-              type="number" 
-              className="input-field"
-              style={{ padding: '6px 8px 6px 20px', fontSize: '0.85rem', textAlign: 'right', background: 'rgba(0,0,0,0.2)' }}
-              value={discount} 
-              onChange={(e) => setDiscount(Number(e.target.value))}
-            />
+      <div className="cart-footer-section">
+        <div className="cart-subtotals">
+          <div className="subtotal-row">
+            <span>Subtotal</span>
+            <span>₵{subtotal.toFixed(2)}</span>
+          </div>
+          
+          <div className="discount-row">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Ticket set="bulk" size={14} /> 
+              <span>Discount</span>
+              <div className="discount-toggle">
+                <button 
+                  className={discountType === 'percentage' ? 'active' : ''}
+                  onClick={() => setDiscountType('percentage')}
+                >
+                  %
+                </button>
+                <button 
+                  className={discountType === 'currency' ? 'active' : ''}
+                  onClick={() => setDiscountType('currency')}
+                >
+                  ₵
+                </button>
+              </div>
+            </div>
+            <div style={{ position: 'relative', width: '80px' }}>
+              <input 
+                type="number" 
+                className="input-field"
+                style={{ padding: '4px 8px', fontSize: '0.8rem', textAlign: 'right' }}
+                value={discount} 
+                onChange={(e) => setDiscount(Number(e.target.value))}
+              />
+            </div>
+          </div>
+
+          <div className="total-row">
+            <span>Total Due</span>
+            <span>₵{total.toFixed(2)}</span>
           </div>
         </div>
 
-        <div style={{ borderTop: '1px dotted var(--border)', margin: '1rem 0', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>Total Due</span>
-          <span style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--primary)' }}>${total.toFixed(2)}</span>
+        <div className="cart-action-buttons">
+          <button 
+            className="btn-secondary btn-cancel"
+            onClick={() => {/* logic moved to parent usually */}}
+          >
+            Clear
+          </button>
+          <button 
+            className="btn-primary btn-checkout"
+            disabled={cart.length === 0 || isProcessing}
+            onClick={onInitiateCheckout}
+          >
+            {isProcessing ? '...' : <><Wallet set="bulk" size={18} /> Checkout</>}
+          </button>
         </div>
-
-        <button 
-          className="btn-primary" 
-          disabled={cart.length === 0 || isProcessing}
-          onClick={onInitiateCheckout}
-          style={{ width: '100%', justifyContent: 'center', padding: '16px', fontSize: '1.1rem' }}
-        >
-          {isProcessing ? 'Processing...' : (
-             <>
-               <Wallet set="bulk" size={22} /> Complete Checkout
-             </>
-          )}
-        </button>
       </div>
     </div>
   );
