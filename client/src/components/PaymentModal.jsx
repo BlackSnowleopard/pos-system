@@ -13,12 +13,15 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
   const config = {
     reference: (new Date()).getTime().toString(),
     email: method === 'CARD' && referenceId ? referenceId : 'guest@pos.com', // Valid format required
-    amount: totalDue * 100, // Convert to kobo/cents
+    amount: Math.round(totalDue * 100), // Convert to kobo/cents and ensure integer
     currency: 'GHS',
+    channels: method === 'MOBILE_MONEY' ? ['mobile_money'] : ['card', 'mobile_money', 'bank', 'ussd', 'qr'],
+    label: `POS Sale - ${method}`,
     metadata: {
       phone_number: customerPhone,
       custom_fields: [
-        { display_name: 'Payment Method', variable_name: 'payment_method', value: 'MOBILE_MONEY' }
+        { display_name: 'Payment Method', variable_name: 'payment_method', value: method },
+        { display_name: 'POS Reference', variable_name: 'pos_reference', value: (new Date()).getTime().toString() }
       ]
     },
     publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_live_fcef6f83711548a02a8ef7de0e3b98a95b815a31'
@@ -26,17 +29,42 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
 
   const initializePayment = usePaystackPayment(config);
 
-  const handlePaystackSuccess = (response) => {
-    // Don't trust frontend response alone - send to backend for verification
-    onConfirm({
-      method: method,
-      amountTendered: totalDue,
-      referenceId: response.reference,
-      customerPhone: customerPhone,
-      customerEmail: method === 'CARD' ? referenceId : null
-    });
-    setIsProcessingPayment(false);
-    onClose();
+  const handlePaystackSuccess = async (response) => {
+    try {
+      setIsProcessingPayment(true);
+      
+      // Verify payment with backend before confirming
+      const verifyResponse = await fetch('/api/payments/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ reference: response.reference })
+      });
+      
+      const verifyResult = await verifyResponse.json();
+      
+      if (!verifyResult.success) {
+        alert('Payment verification failed. Please contact support.');
+        setIsProcessingPayment(false);
+        return;
+      }
+
+      onConfirm({
+        method: method,
+        amountTendered: totalDue,
+        referenceId: response.reference,
+        customerPhone: customerPhone,
+        customerEmail: method === 'CARD' ? referenceId : null
+      });
+      setIsProcessingPayment(false);
+      onClose();
+    } catch (error) {
+      console.error('Verification error:', error);
+      alert('Error verifying payment. Please try again.');
+      setIsProcessingPayment(false);
+    }
   };
 
   const handlePaystackClose = () => {
@@ -51,35 +79,17 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
       : 0
     : 0;
 
-  // Reset form when modal opens - use state initializer pattern
-  const getInitialState = () => {
-    if (isOpen) {
-      return {
-        method: 'CASH',
-        amountTendered: totalDue.toString(),
-        referenceId: '',
-        customerPhone: '',
-        isProcessingPayment: false
-      };
-    }
-    return {
-      method,
-      amountTendered,
-      referenceId,
-      customerPhone,
-      isProcessingPayment
-    };
-  };
-
-  const initialState = getInitialState();
-
   // Update state when modal opens
-  if (isOpen && (method !== initialState.method || amountTendered !== initialState.amountTendered || referenceId !== initialState.referenceId || customerPhone !== initialState.customerPhone || isProcessingPayment !== initialState.isProcessingPayment)) {
-    setMethod(initialState.method);
-    setAmountTendered(initialState.amountTendered);
-    setReferenceId(initialState.referenceId);
-    setCustomerPhone(initialState.customerPhone);
-    setIsProcessingPayment(initialState.isProcessingPayment);
+  const [lastIsOpen, setLastIsOpen] = useState(false);
+  if (isOpen && !lastIsOpen) {
+    setMethod('CASH');
+    setAmountTendered(totalDue.toString());
+    setReferenceId('');
+    setCustomerPhone('');
+    setIsProcessingPayment(false);
+    setLastIsOpen(true);
+  } else if (!isOpen && lastIsOpen) {
+    setLastIsOpen(false);
   }
 
   // Auto-set amount for non-cash payments
