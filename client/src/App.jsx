@@ -8,7 +8,6 @@ import ProductsPage from './pages/ProductsPage';
 import InventoryPage from './pages/InventoryPage';
 import SalesPage from './pages/SalesPage';
 import CustomersPage from './pages/CustomersPage';
-import ReportsPage from './pages/ReportsPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 import MainLayout from './components/MainLayout';
 
@@ -56,14 +55,6 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['Administrator', 'Manager', 'Cashier']}>
                 <MainLayout><CustomersPage /></MainLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/reports" 
-            element={
-              <ProtectedRoute allowedRoles={['Administrator', 'Manager']}>
-                <MainLayout><ReportsPage /></MainLayout>
               </ProtectedRoute>
             } 
           />

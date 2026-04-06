@@ -79,11 +79,38 @@ router.post('/', async (req, res) => {
     }
     const changeReturned = amountTendered - finalAmount;
 
+    let finalCustomerId = customer_id || null;
+
+    if (!finalCustomerId && (paymentDetails.method === 'MOBILE_MONEY' || paymentDetails.method === 'CARD')) {
+      const email = paymentDetails.method === 'CARD' ? paymentDetails.customerEmail : null;
+      const phone = paymentDetails.method === 'MOBILE_MONEY' ? paymentDetails.customerPhone : null;
+      
+      if (email || phone) {
+        // Query to check if customer exists with phone or email
+        const existCheck = await client.query(
+          'SELECT customer_id FROM customers WHERE (phone = $1 AND $1 IS NOT NULL) OR (email = $2 AND $2 IS NOT NULL)',
+          [phone, email]
+        );
+        
+        if (existCheck.rows.length > 0) {
+          finalCustomerId = existCheck.rows[0].customer_id;
+        } else {
+          // Create new digital customer
+          const newName = paymentDetails.method === 'MOBILE_MONEY' ? 'MoMo Customer' : 'Card Customer';
+          const newCust = await client.query(
+            'INSERT INTO customers (name, phone, email) VALUES ($1, $2, $3) RETURNING customer_id',
+            [newName, phone, email]
+          );
+          finalCustomerId = newCust.rows[0].customer_id;
+        }
+      }
+    }
+
     // 4. Create the main Sale record (Module 4 & 6)
     const saleInsert = await client.query(
       `INSERT INTO sales (user_id, customer_id, total_amount, discount_applied, payment_method) 
        VALUES ($1, $2, $3, $4, $5) RETURNING sale_id`,
-      [user_id, customer_id || null, finalAmount, discount || 0, paymentDetails.method]
+      [user_id, finalCustomerId, finalAmount, discount || 0, paymentDetails.method]
     );
     const newSaleId = saleInsert.rows[0].sale_id;
 

@@ -21,6 +21,7 @@ const Dashboard = () => {
   const [inventoryStatus, setInventoryStatus] = useState({});
   const [topProducts, setTopProducts] = useState([]);
   const [cashierPerformance, setCashierPerformance] = useState([]);
+  const [recentSales, setRecentSales] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const isManager = user?.role === 'Administrator' || user?.role === 'Manager';
@@ -32,11 +33,12 @@ const Dashboard = () => {
 
       try {
         // Fetch all data in parallel
-        const [summaryRes, inventoryRes, productsRes, cashierRes] = await Promise.allSettled([
+        const [summaryRes, inventoryRes, productsRes, cashierRes, recentRes] = await Promise.allSettled([
           fetch('http://localhost:5000/api/reports/summary', { headers }),
           fetch('http://localhost:5000/api/reports/inventory-status', { headers }),
           fetch('http://localhost:5000/api/reports/top-products', { headers }),
           fetch('http://localhost:5000/api/reports/cashier-performance', { headers }),
+          fetch('http://localhost:5000/api/reports/recent-sales', { headers }),
         ]);
 
         if (summaryRes.status === 'fulfilled' && summaryRes.value.ok) {
@@ -50,6 +52,9 @@ const Dashboard = () => {
         }
         if (cashierRes.status === 'fulfilled' && cashierRes.value.ok) {
           setCashierPerformance(await cashierRes.value.json());
+        }
+        if (recentRes.status === 'fulfilled' && recentRes.value.ok) {
+          setRecentSales(await recentRes.value.json());
         }
       } catch (err) {
         console.error('Dashboard data fetch error:', err);
@@ -249,6 +254,41 @@ const Dashboard = () => {
                     </td>
                   </tr>
                 ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Recent Transactions History */}
+      <div className="dashboard-table-card" style={{ marginTop: '1.5rem', gridColumn: 'span 12' }}>
+        <div className="table-card-header">
+          <h3>Recent Transactions History</h3>
+          <Link to="/sales" className="subtitle" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Go to Checkout →</Link>
+        </div>
+        <div className="data-table-container">
+          <table className="modern-table">
+            <thead>
+              <tr>
+                <th>Sale ID</th>
+                <th>Timestamp</th>
+                <th>Staff Member</th>
+                <th>Method</th>
+                <th style={{ textAlign: 'right' }}>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentSales.map((sale) => (
+                <tr key={sale.sale_id}>
+                  <td style={{ color: 'var(--text-dim)', fontFamily: 'monospace' }}>#{sale.sale_id}</td>
+                  <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(sale.created_at).toLocaleString()}</td>
+                  <td style={{ fontWeight: 600 }}>{sale.cashier_name}</td>
+                  <td><span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>{sale.payment_method}</span></td>
+                  <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--primary)' }}>₵{Number(sale.total_amount).toFixed(2)}</td>
+                </tr>
+              ))}
+              {recentSales.length === 0 && (
+                 <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-dim)' }}>No recent activity.</td></tr>
               )}
             </tbody>
           </table>

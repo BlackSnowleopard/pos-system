@@ -3,9 +3,9 @@
 
 :root {
   /* --- Dark Theme (Default) --- */
-  --bg-deep: #0b0f19;
+  --bg-deep: #111827;
   --bg-dark: #111827;
-  --bg-card: rgba(17, 24, 39, 0.7);
+  --bg-card: #1f2937;
   
   --primary: #38bdf8;
   --primary-glow: rgba(56, 189, 248, 0.15);
@@ -23,7 +23,7 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
   
-  --sidebar-bg: #0b0f19;
+  --sidebar-bg: #111827;
   --sidebar-active: rgba(56, 189, 248, 0.1);
   
   /* Shared Constants */
@@ -95,11 +95,8 @@ h1, h2, h3, h4, h5, h6 {
 /* ============================================ */
 
 .glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   transition: var(--transition);
 }
@@ -115,7 +112,7 @@ h1, h2, h3, h4, h5, h6 {
 .fade-in { animation: fadeIn 0.4s ease-out forwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-.hover-glow:hover { box-shadow: 0 0 20px var(--primary-glow); border-color: var(--primary); }
+.hover-glow:hover { border-color: var(--border-light); background: rgba(255, 255, 255, 0.02); }
 
 .badge {
   padding: 4px 10px;
@@ -137,7 +134,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ============================================ */
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  background: var(--primary);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -149,12 +146,10 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
-  box-shadow: 0 4px 14px 0 rgba(56, 189, 248, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
   filter: brightness(1.1);
 }
 
@@ -192,7 +187,6 @@ h1, h2, h3, h4, h5, h6 {
 .input-field:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .input-field::placeholder { color: var(--text-dim); }
@@ -245,7 +239,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 36px;
   height: 36px;
   min-width: 36px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  background: var(--primary);
   color: white;
   border-radius: 10px;
   display: flex;
@@ -533,7 +527,6 @@ h1, h2, h3, h4, h5, h6 {
 .header-search input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .header-search input::placeholder { color: var(--text-dim); }
@@ -583,7 +576,7 @@ h1, h2, h3, h4, h5, h6 {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  background: var(--primary);
   opacity: 0.6;
 }
 
@@ -648,7 +641,6 @@ h1, h2, h3, h4, h5, h6 {
 .time-filter button.active {
   background: var(--primary);
   color: white;
-  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.3);
 }
 
 .time-filter button:hover:not(.active) {
@@ -801,7 +793,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: 1rem;
   text-align: center;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(129, 140, 248, 0.08));
+  background: var(--bg-deep); /* solid flat background */
 }
 
 .total-display .total-label {
@@ -1005,7 +997,6 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--primary);
   border-color: var(--primary);
   color: white;
-  box-shadow: 0 4px 12px var(--primary-glow);
 }
 
 .cart-action-buttons {
@@ -1077,7 +1068,6 @@ h1, h2, h3, h4, h5, h6 {
 .sales-search-bar input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .sales-search-bar input::placeholder { color: var(--text-dim); }
@@ -1115,7 +1105,6 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--primary);
   background: var(--primary-glow);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.1);
 }
 
 .category-card.active {
@@ -1169,7 +1158,6 @@ h1, h2, h3, h4, h5, h6 {
 
 .sales-product-card:hover {
   border-color: var(--primary);
-  box-shadow: 0 0 16px var(--primary-glow);
 }
 
 .sales-product-card.out-of-stock {
@@ -1225,7 +1213,6 @@ h1, h2, h3, h4, h5, h6 {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;

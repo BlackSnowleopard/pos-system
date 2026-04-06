@@ -30,10 +30,11 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
   const handlePaystackSuccess = (response) => {
     // Don't trust frontend response alone - send to backend for verification
     onConfirm({
-      method: 'MOBILE_MONEY',
+      method: method,
       amountTendered: totalDue,
       referenceId: response.reference,
-      customerPhone
+      customerPhone: customerPhone,
+      customerEmail: method === 'CARD' ? referenceId : null
     });
     setIsProcessingPayment(false);
     onClose();

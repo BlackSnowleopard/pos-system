@@ -5,18 +5,18 @@ import { ThemeContext } from '../contexts/ThemeContext';
 import { 
   Home, 
   Buy, 
-  Category, 
   User, 
-  Graph, 
   Document, 
   Logout,
-  Setting,
   Search,
-  ChevronRight
+  ChevronRight,
+  Category,
+  Setting,
+  CloseSquare
 } from 'react-iconly';
+import { Sun, Moon } from 'lucide-react';
 
-// Custom chevron-left icon for collapse toggle
-const CollapseIcon = ({ size = 20 }) => (
+const HamburgerIcon = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="3" y1="12" x2="21" y2="12" />
     <line x1="3" y1="6" x2="21" y2="6" />
@@ -35,7 +35,7 @@ const MainLayout = ({ children }) => {
   });
 
   const [inventoryOpen, setInventoryOpen] = useState(() => {
-    return location.pathname === '/inventory';
+    return location.pathname === '/inventory' || location.pathname === '/products';
   });
 
   const handleCollapse = () => {
@@ -49,25 +49,15 @@ const MainLayout = ({ children }) => {
     navigate('/');
   };
 
-  const mainNavLinks = [
-    { name: 'Dashboard', path: '/dashboard', icon: <Home set="bulk" primaryColor="currentColor" size={20} />, roles: ['Administrator', 'Manager', 'Cashier'] },
-    { name: 'Checkout', path: '/sales', icon: <Buy set="bulk" primaryColor="currentColor" size={20} />, roles: ['Administrator', 'Manager', 'Cashier'] },
-    { name: 'Products', path: '/products', icon: <Category set="bulk" primaryColor="currentColor" size={20} />, roles: ['Administrator', 'Manager', 'Cashier'] },
-    { name: 'Customers', path: '/customers', icon: <User set="bulk" primaryColor="currentColor" size={20} />, roles: ['Administrator', 'Manager', 'Cashier'] },
-    { name: 'Reports', path: '/reports', icon: <Graph set="bulk" primaryColor="currentColor" size={20} />, roles: ['Administrator', 'Manager'] },
-  ];
-
-  const filteredLinks = mainNavLinks.filter(link => link.roles.includes(user?.role));
   const showInventory = user?.role === 'Administrator' || user?.role === 'Manager';
 
   // Page title mapping
   const pageTitles = {
-    '/dashboard': 'Overview',
+    '/dashboard': 'Dashboard & Analytics',
     '/sales': 'Checkout',
-    '/products': 'Products',
+    '/products': 'Product Catalog',
     '/customers': 'Customers',
-    '/reports': 'Reports',
-    '/inventory': 'Inventory',
+    '/inventory': 'Stock Adjustments',
   };
 
   const pageTitle = pageTitles[location.pathname] || 'Dashboard';
@@ -75,107 +65,139 @@ const MainLayout = ({ children }) => {
   return (
     <div className={`app-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
       <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
-        {/* User Profile at Top */}
-        <div className="sidebar-profile">
+        
+        {/* Toggle Button at the top */}
+        <div style={{ display: 'flex', justifyContent: isCollapsed ? 'center' : 'flex-end', padding: isCollapsed ? '20px 0 10px 0' : '20px 20px 10px 0' }}>
+          <button 
+            onClick={handleCollapse} 
+            title={isCollapsed ? 'Expand Menu' : 'Close Menu'}
+            style={{ 
+               background: 'none', 
+               border: 'none', 
+               color: 'var(--text-dim)', 
+               cursor: 'pointer',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+               width: '40px',
+               height: '40px',
+               borderRadius: '8px',
+               transition: 'background 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+          >
+            {isCollapsed ? <HamburgerIcon size={24} /> : <CloseSquare set="light" size={24} />}
+          </button>
+        </div>
+
+        {/* User Profile */}
+        <div className="sidebar-profile" style={{ marginTop: '0', paddingTop: '10px' }}>
           <div className="user-avatar">{user?.name?.charAt(0)}</div>
           <div className="profile-info">
             <span className="profile-name">{user?.name}</span>
             <span className="profile-email">{user?.email || user?.role}</span>
           </div>
-          <button className="collapse-toggle" onClick={handleCollapse} title={isCollapsed ? 'Expand' : 'Collapse'}>
-            <CollapseIcon size={16} />
-          </button>
         </div>
         
         {/* Navigation */}
         <nav className="nav-links">
-          {filteredLinks.map((link) => {
-            // Insert Inventory before Products
-            if (link.path === '/products' && showInventory) {
-              return (
-                <React.Fragment key="inventory-group">
-                  {/* Inventory with submenu */}
-                  <li className="nav-item">
-                    <div
-                      className={`nav-link nav-submenu-trigger ${inventoryOpen ? 'open' : ''} ${location.pathname === '/inventory' ? 'active' : ''}`}
-                      data-tooltip="Inventory"
-                      onClick={() => {
-                        if (isCollapsed) {
-                          navigate('/inventory');
-                        } else {
-                          setInventoryOpen(!inventoryOpen);
-                        }
-                      }}
-                    >
-                      <span className="nav-icon">
-                        <Document set="bulk" primaryColor="currentColor" size={20} />
-                      </span>
-                      <span className="nav-text">Inventory</span>
-                      <span className="submenu-chevron">
-                        <ChevronRight set="light" size={14} primaryColor="currentColor" />
-                      </span>
-                    </div>
-                    <div className={`nav-submenu ${inventoryOpen ? 'open' : ''}`}>
-                      <Link 
-                        to="/inventory" 
-                        className={`nav-link ${location.pathname === '/inventory' ? 'active' : ''}`}
-                        data-tooltip="Stock Levels"
-                      >
-                        <span className="nav-text">Stock Levels</span>
-                      </Link>
-                      <Link 
-                        to="/inventory" 
-                        className="nav-link"
-                        data-tooltip="Adjustments"
-                      >
-                        <span className="nav-text">Adjustments</span>
-                      </Link>
-                    </div>
-                  </li>
+          {/* Dashboard */}
+          <li className="nav-item">
+            <Link 
+              to="/dashboard" 
+              className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}
+              data-tooltip="Dashboard"
+            >
+              <span className="nav-icon"><Home set="bulk" primaryColor="currentColor" size={20} /></span>
+              <span className="nav-text">Dashboard</span>
+            </Link>
+          </li>
 
-                  {/* Then Products */}
-                  <li key={link.path} className="nav-item">
-                    <Link 
-                      to={link.path} 
-                      className={`nav-link ${location.pathname === link.path ? 'active' : ''}`}
-                      data-tooltip={link.name}
-                    >
-                      <span className="nav-icon">{link.icon}</span>
-                      <span className="nav-text">{link.name}</span>
-                    </Link>
-                  </li>
-                </React.Fragment>
-              );
-            }
+          {/* Checkout */}
+          <li className="nav-item">
+            <Link 
+              to="/sales" 
+              className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`}
+              data-tooltip="Checkout"
+            >
+              <span className="nav-icon"><Buy set="bulk" primaryColor="currentColor" size={20} /></span>
+              <span className="nav-text">Checkout</span>
+            </Link>
+          </li>
 
-            return (
-              <li key={link.path} className="nav-item">
+          {/* Customers */}
+          <li className="nav-item">
+            <Link 
+              to="/customers" 
+              className={`nav-link ${location.pathname === '/customers' ? 'active' : ''}`}
+              data-tooltip="Customers"
+            >
+              <span className="nav-icon"><User set="bulk" primaryColor="currentColor" size={20} /></span>
+              <span className="nav-text">Customers</span>
+            </Link>
+          </li>
+
+          {/* Inventory (Admin/Manager only) */}
+          {showInventory && (
+            <li className="nav-item">
+              <div
+                className={`nav-link nav-submenu-trigger ${inventoryOpen ? 'open' : ''} ${(location.pathname === '/inventory' || location.pathname === '/products') ? 'active' : ''}`}
+                data-tooltip="Inventory"
+                onClick={() => {
+                  if (isCollapsed) {
+                    navigate('/inventory');
+                  } else {
+                    setInventoryOpen(!inventoryOpen);
+                  }
+                }}
+              >
+                <span className="nav-icon">
+                  <Document set="bulk" primaryColor="currentColor" size={20} />
+                </span>
+                <span className="nav-text">Inventory</span>
+                <span className="submenu-chevron">
+                  <ChevronRight set="light" size={14} primaryColor="currentColor" />
+                </span>
+              </div>
+              <div className={`nav-submenu ${inventoryOpen ? 'open' : ''}`}>
                 <Link 
-                  to={link.path} 
-                  className={`nav-link ${location.pathname === link.path ? 'active' : ''}`}
-                  data-tooltip={link.name}
+                  to="/products" 
+                  className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`}
+                  data-tooltip="Products"
                 >
-                  <span className="nav-icon">{link.icon}</span>
-                  <span className="nav-text">{link.name}</span>
+                  <span className="nav-icon" style={{ marginLeft: '10px' }}><Category set="bulk" primaryColor="currentColor" size={16} /></span>
+                  <span className="nav-text">Products Catalog</span>
                 </Link>
-              </li>
-            );
-          })}
+                <Link 
+                  to="/inventory" 
+                  className={`nav-link ${location.pathname === '/inventory' ? 'active' : ''}`}
+                  data-tooltip="Adjustments"
+                >
+                  <span className="nav-icon" style={{ marginLeft: '10px' }}><Setting set="light" primaryColor="currentColor" size={16} /></span>
+                  <span className="nav-text">Stock Adjustments</span>
+                </Link>
+              </div>
+            </li>
+          )}
         </nav>
 
         {/* Footer: Theme + Logout */}
         <div className="sidebar-footer">
           <div className="nav-item">
-            <button onClick={toggleTheme} className="nav-link" data-tooltip="Theme" style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', justifyContent: 'space-between' }}>
+            <button onClick={toggleTheme} className="nav-link" data-tooltip="Theme" style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span className="nav-icon">
-                  <Setting set="bulk" primaryColor="currentColor" size={20} />
+                  {theme === 'light' ? <Sun size={20} color="currentColor" /> : <Moon size={20} color="currentColor" />}
                 </span>
-                <span className="nav-text">Theme</span>
+                <span className="nav-text">Toggle Theme</span>
               </div>
-              <div className={`toggle-switch ${theme}`}>
-                <div className="toggle-knob"></div>
-              </div>
+              
+              {!isCollapsed && (
+                <div style={{ width: '32px', height: '18px', borderRadius: '10px', background: theme === 'light' ? 'var(--primary)' : 'rgba(255,255,255,0.1)', position: 'relative', transition: 'var(--transition)' }}>
+                  <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: theme === 'light' ? '16px' : '2px', transition: 'left 0.2s ease-out' }}></div>
+                </div>
+              )}
             </button>
           </div>
 
@@ -198,15 +220,15 @@ const MainLayout = ({ children }) => {
                 className="collapse-toggle" 
                 onClick={handleCollapse} 
                 title="Expand Sidebar"
-                style={{ margin: 0 }}
+                style={{ margin: 0, display: 'none' }} // Hidden here since it's now permanently inside the sidebar
               >
-                <CollapseIcon size={16} />
+                <HamburgerIcon size={16} />
               </button>
             )}
             <h2>{pageTitle}</h2>
           </div>
           
-          {(location.pathname === '/dashboard' || location.pathname === '/reports') && (
+          {location.pathname === '/dashboard' && (
             <div className="header-search">
               <span className="search-icon">
                 <Search set="light" size={16} primaryColor="currentColor" />
