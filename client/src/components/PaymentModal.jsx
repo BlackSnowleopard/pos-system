@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Wallet, Ticket, Call, CloseSquare, ShieldDone } from 'react-iconly';
-import { usePaystackPayment } from 'react-paystack';
 
 const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
   const [method, setMethod] = useState('CASH');
@@ -9,31 +8,31 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  // Paystack configuration
-  const config = {
-    reference: (new Date()).getTime().toString(),
-    email: method === 'CARD' && referenceId ? referenceId : 'guest@pos.com', // Valid format required
-    amount: Math.round(totalDue * 100), // Convert to kobo/cents and ensure integer
-    currency: 'GHS',
-    channels: method === 'MOBILE_MONEY' ? ['mobile_money'] : ['card', 'mobile_money', 'bank', 'ussd', 'qr'],
-    label: `POS Sale - ${method}`,
-    metadata: {
-      phone_number: customerPhone,
-      custom_fields: [
-        { display_name: 'Payment Method', variable_name: 'payment_method', value: method },
-        { display_name: 'POS Reference', variable_name: 'pos_reference', value: (new Date()).getTime().toString() }
-      ]
-    },
-    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_live_fcef6f83711548a02a8ef7de0e3b98a95b815a31'
-  };
+  // Update state when modal opens
+  const [lastIsOpen, setLastIsOpen] = useState(false);
+  if (isOpen && !lastIsOpen) {
+    setMethod('CASH');
+    setAmountTendered(totalDue.toString());
+    setReferenceId('');
+    setCustomerPhone('');
+    setIsProcessingPayment(false);
+    setLastIsOpen(true);
+  } else if (!isOpen && lastIsOpen) {
+    setLastIsOpen(false);
+  }
 
-  const initializePayment = usePaystackPayment(config);
+  // Calculate change due for cash payments
+  const changeDueValue = method === 'CASH' 
+    ? Number(amountTendered) >= totalDue 
+      ? Number(amountTendered) - totalDue 
+      : 0
+    : 0;
 
-  const handlePaystackSuccess = async (response) => {
+  // Paystack verification and confirmation
+  const handlePaystackSuccess = async (response, currentMethod, currentPhone, currentEmail) => {
     try {
       setIsProcessingPayment(true);
       
-      // Verify payment with backend before confirming
       const verifyResponse = await fetch('/api/payments/verify', {
         method: 'POST',
         headers: {
@@ -52,11 +51,11 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
       }
 
       onConfirm({
-        method: method,
+        method: currentMethod,
         amountTendered: totalDue,
         referenceId: response.reference,
-        customerPhone: customerPhone,
-        customerEmail: method === 'CARD' ? referenceId : null
+        customerPhone: currentPhone,
+        customerEmail: currentMethod === 'CARD' ? currentEmail : null
       });
       setIsProcessingPayment(false);
       onClose();
@@ -71,31 +70,6 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
     setIsProcessingPayment(false);
     // Payment was cancelled - don't clear cart
   };
-
-  // Calculate change due for cash payments
-  const changeDueValue = method === 'CASH' 
-    ? Number(amountTendered) >= totalDue 
-      ? Number(amountTendered) - totalDue 
-      : 0
-    : 0;
-
-  // Update state when modal opens
-  const [lastIsOpen, setLastIsOpen] = useState(false);
-  if (isOpen && !lastIsOpen) {
-    setMethod('CASH');
-    setAmountTendered(totalDue.toString());
-    setReferenceId('');
-    setCustomerPhone('');
-    setIsProcessingPayment(false);
-    setLastIsOpen(true);
-  } else if (!isOpen && lastIsOpen) {
-    setLastIsOpen(false);
-  }
-
-  // Auto-set amount for non-cash payments
-  if (method !== 'CASH' && amountTendered !== totalDue.toString()) {
-    setAmountTendered(totalDue.toString());
-  }
 
   if (!isOpen) return null;
 
@@ -113,20 +87,91 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
         referenceId: null
       });
     } else if (method === 'MOBILE_MONEY') {
-      // Validate Ghana phone number
-      const phoneRegex = /^0[2-9]\d{8}$/;
+      // Validate Ghana phone number (10 digits starting with 0)
+      const phoneRegex = /^0\d{9}$/;
       if (!phoneRegex.test(customerPhone)) {
-        alert('Please enter a valid Ghana mobile number (e.g., 024XXXXXXX)');
+        alert('Please enter a valid Ghana mobile number (10 digits starting with 0)');
         return;
       }
       
       setIsProcessingPayment(true);
-      // Initialize Paystack payment
-      initializePayment(handlePaystackSuccess, handlePaystackClose);
+      const paymentConfig = {
+        reference: (new Date()).getTime().toString(),
+        email: 'pos-system@sopl.com',
+        amount: Math.round(totalDue * 100),
+        currency: 'GHS',
+        channels: ['mobile_money'],
+        label: `POS Sale - Mobile`,
+        metadata: {
+          phone_number: customerPhone,
+          custom_fields: [
+            { display_name: 'Payment Method', variable_name: 'payment_method', value: 'MOBILE_MONEY' },
+            { display_name: 'Phone Number', variable_name: 'customer_phone', value: customerPhone }
+          ]
+        },
+        publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_live_fcef6f83711548a02a8ef7de0e3b98a95b815a31'
+      };
+      
+      console.log('Initializing Mobile Money Paystack with:', { ...paymentConfig, publicKey: 'REDACTED' });
+      
+      try {
+        if (!window.PaystackPop) {
+          throw new Error('Paystack script not loaded. Please check your internet connection.');
+        }
+
+        // Initialize Paystack payment using the window object directly to ensure latest config
+        const handler = window.PaystackPop.setup({
+          ...paymentConfig,
+          key: paymentConfig.publicKey,
+          callback: (response) => {
+            console.log('Paystack callback received:', response);
+            handlePaystackSuccess(response, 'MOBILE_MONEY', customerPhone, referenceId);
+          },
+          onClose: () => {
+            console.log('Paystack window closed');
+            handlePaystackClose();
+          },
+        });
+        handler.openIframe();
+      } catch (err) {
+        console.error('Paystack initialization error:', err);
+        alert(`Could not initialize Paystack: ${err.message}`);
+        setIsProcessingPayment(false);
+      }
     } else if (method === 'CARD') {
       // For card payments, we'd also use Paystack but without phone number
       setIsProcessingPayment(true);
-      initializePayment(handlePaystackSuccess, handlePaystackClose);
+      const paymentConfig = {
+        reference: (new Date()).getTime().toString(),
+        email: referenceId || 'pos-system@sopl.com',
+        amount: Math.round(totalDue * 100),
+        currency: 'GHS',
+        channels: ['card'],
+        label: `POS Sale - Card`,
+        metadata: {
+          custom_fields: [
+            { display_name: 'Payment Method', variable_name: 'payment_method', value: 'CARD' }
+          ]
+        },
+        publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_live_fcef6f83711548a02a8ef7de0e3b98a95b815a31'
+      };
+      
+      console.log('Initializing Card Paystack with:', { ...paymentConfig, publicKey: 'REDACTED' });
+      
+      try {
+        // Initialize Paystack payment
+        const handler = window.PaystackPop.setup({
+          ...paymentConfig,
+          key: paymentConfig.publicKey,
+          callback: (response) => handlePaystackSuccess(response, 'CARD', customerPhone, referenceId),
+          onClose: () => handlePaystackClose(),
+        });
+        handler.openIframe();
+      } catch (err) {
+        console.error('Paystack initialization error:', err);
+        alert('Could not initialize Paystack. Please check your internet connection or keys.');
+        setIsProcessingPayment(false);
+      }
     }
   };
 
