@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Barcode Scanner Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-area { border: 2px solid #ccc; padding: 20px; margin: 10px 0; }
+        .barcode { background: #f0f0f0; padding: 10px; margin: 5px 0; font-family: monospace; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>POS Barcode Scanner Test</h1>
+    
+    <div class="test-area">
+        <h3>Available Products with Barcodes:</h3>
+        <div class="barcode">Coca Cola 1L - Barcode: 049000028206</div>
+        <div class="barcode">Lays Classic Chips - Barcode: 028400000000</div>
+        <div class="barcode">Whole Wheat Bread - Barcode: 123456789012</div>
+        <div class="barcode">AUX Parfum - Barcode: 034600003697</div>
+        <div class="barcode">Light up lotion - Barcode: 6043000036963</div>
+    </div>
+
+    <div class="test-area">
+        <h3>How to Test (GLOBAL SCANNING):</h3>
+        <ol>
+            <li>Open the POS system at <a href="http://localhost:5175" target="_blank">http://localhost:5175</a></li>
+            <li>Login as admin@pos.com / admin123</li>
+            <li>Go to Sales page</li>
+            <li><strong>NO NEED to click on any field!</strong> Just start typing anywhere on the page</li>
+            <li>Type one of these barcodes quickly (simulating scanner speed):</li>
+            <ul>
+                <li>Type: <code>049000028206</code> then press Enter (should add Coca Cola - ₵1.50)</li>
+                <li>Type: <code>028400000000</code> then press Enter (should add Lays Chips - ₵2.00)</li>
+                <li>Type: <code>123456789012</code> then press Enter (should add Bread - ₵3.20)</li>
+                <li>Type: <code>6043000036963</code> then press Enter (should add Lotion - ₵1.50)</li>
+            </ul>
+            <li><strong>Important:</strong> Type quickly (within 1-2 seconds) to simulate scanner timing</li>
+            <li>Watch the search bar turn red with "🔴 Scanning..." indicator</li>
+            <li>Check the browser console for success messages</li>
+            <li>Verify the product appears in the cart automatically</li>
+        </ol>
+        
+        <h3>Visual Indicators:</h3>
+        <div class="success">✓ Search bar border turns red when scanning is detected</div>
+        <div class="success">✓ "SCANNING" text appears in the search bar</div>
+        <div class="success">✓ Placeholder changes to "🔴 Scanning..."</div>
+    </div>
+
+    <div class="test-area">
+        <h3>Expected Results:</h3>
+        <div class="success">✓ Console shows: "Barcode scanned: [barcode] - Added [product name] to cart"</div>
+        <div class="success">✓ Product appears in shopping cart with quantity 1</div>
+        <div class="success">✓ Cart total updates automatically</div>
+        
+        <h3>If it doesn't work:</h3>
+        <div class="error">✗ Check browser console for error messages</div>
+        <div class="error">✗ Make sure you're typing quickly (simulating scanner speed)</div>
+        <div class="error">✗ Ensure the search field has focus when typing</div>
+    </div>
+
+    <button onclick="window.open('http://localhost:5175', '_blank')">
+        Open POS System
+    </button>
+</body>
+</html>

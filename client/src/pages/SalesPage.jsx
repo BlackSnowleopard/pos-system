@@ -42,6 +42,7 @@ const SalesPage = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
 
   // Product browsing state
   const [allProducts, setAllProducts] = useState([]);
@@ -86,30 +87,122 @@ const SalesPage = () => {
     return filtered;
   };
 
-  const subtotal = cart.reduce((t, i) => t + (i.price * i.quantity), 0);
+  const subtotal = cart.reduce((t, i) => t + (parseFloat(i.price) * i.quantity), 0);
   const discountAmount = discountType === 'percentage' 
     ? (subtotal * discount) / 100 
     : discount;
   const total = Math.max(0, subtotal - discountAmount);
+  
+  // Debug cart calculation
+  console.log('Cart calculation debug:', {
+    cartItems: cart,
+    subtotal: subtotal,
+    discountAmount: discountAmount,
+    total: total,
+    cartLength: cart.length
+  });
 
-  const handleAddToCart = (product) => {
-    if (product.quantity <= 0) return;
+  const handleAddToCart = React.useCallback((product) => {
+    console.log('Adding to cart:', product);
+    if (product.quantity <= 0) {
+      console.log('Product out of stock:', product.product_name);
+      return;
+    }
     setCart(prev => {
+      console.log('Current cart:', prev);
       const existing = prev.find(item => item.product_id === product.product_id);
       if (existing) {
         if (existing.quantity >= product.quantity) {
           alert('Cannot add more — exceeds available stock.');
           return prev;
         }
-        return prev.map(item => 
+        const newCart = prev.map(item => 
           item.product_id === product.product_id 
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
+        console.log('Updated cart (existing item):', newCart);
+        return newCart;
       }
-      return [...prev, { ...product, quantity: 1 }];
+      const newCart = [...prev, { ...product, quantity: 1 }];
+      console.log('Updated cart (new item):', newCart);
+      return newCart;
     });
-  };
+  }, []);
+
+  // --- GLOBAL BARCODE SCANNER INTERCEPTOR ---
+  useEffect(() => {
+    let barcodeBuffer = '';
+    let lastKeyTime = Date.now();
+    let scanningTimeout = null;
+
+    const handleKeyDown = (e) => {
+      // Only block scanning when user is actively typing in form fields
+      // Allow global scanning everywhere else including when search bar is focused
+      if (e.target.tagName === 'TEXTAREA') return;
+      if (e.target.tagName === 'INPUT' && 
+          e.target.type === 'text' && 
+          e.target.value.length > 0 &&
+          e.target.placeholder !== 'Scan Barcode or Search Product Name...' &&
+          e.target.placeholder !== '🔴 Scanning...') return;
+
+      const currentTime = Date.now();
+      
+      // Show scanning indicator when rapid keystrokes detected
+      if (!isScanning && currentTime - lastKeyTime < 50) {
+        setIsScanning(true);
+        // Clear any existing timeout
+        if (scanningTimeout) clearTimeout(scanningTimeout);
+        // Auto-hide scanning indicator after 2 seconds of inactivity
+        scanningTimeout = setTimeout(() => {
+          setIsScanning(false);
+          barcodeBuffer = '';
+        }, 2000);
+      }
+      
+      // Phone scanner emulators fire keystrokes typically within 10-30ms.
+      // If gap exceeds 100ms, it's likely a human typing, so we reset the buffer.
+      if (currentTime - lastKeyTime > 100) {
+        barcodeBuffer = '';
+        setIsScanning(false);
+        if (scanningTimeout) clearTimeout(scanningTimeout);
+      }
+      lastKeyTime = currentTime;
+
+      if (e.key === 'Enter') {
+        if (barcodeBuffer.length > 2) { // Prevents accidental empty enters
+          const scannedCode = barcodeBuffer.trim();
+          // Find matching product by barcode or product ID
+          const match = allProducts.find(p => p.barcode === scannedCode || p.product_id.toString() === scannedCode);
+          
+          if (match) {
+            console.log(`✓ Barcode scanned: ${scannedCode} - Added ${match.product_name} to cart`);
+            handleAddToCart(match);
+            // Clear search field if it has the scanned barcode
+            if (searchQuery === scannedCode) {
+              setSearchQuery('');
+            }
+          } else {
+            console.warn(`⚠️ Scanned barcode not found in catalog: "${scannedCode}" (length: ${scannedCode.length})`);
+            console.log('Available barcodes:', allProducts.map(p => `${p.product_name}: ${p.barcode}`));
+            alert(`Product not found for barcode: "${scannedCode}"\n\nCheck barcode length and try again.`);
+          }
+        }
+        barcodeBuffer = '';
+        setIsScanning(false);
+        if (scanningTimeout) clearTimeout(scanningTimeout);
+        return;
+      }
+
+      // Compile printable single-character keys into the buffer string
+      if (e.key.length === 1) {
+        barcodeBuffer += e.key;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [allProducts, handleAddToCart, isScanning, searchQuery]);
 
   const handleUpdateQuantity = (productId, change) => {
     setCart(prev => prev.map(item => {
@@ -209,6 +302,10 @@ const SalesPage = () => {
         setDiscountType={setDiscountType}
         onInitiateCheckout={() => setIsPaymentModalOpen(true)}
         isProcessing={isProcessing}
+        onClear={() => {
+          setCart([]);
+          setDiscount(0);
+        }}
       />
 
       {/* ===== RIGHT PANEL: Products ===== */}
@@ -220,10 +317,27 @@ const SalesPage = () => {
           </span>
           <input 
             type="text"
-            placeholder="Scan Barcode or Search Product Name..."
+            placeholder={isScanning ? "🔴 Scanning..." : "Scan Barcode or Search Product Name..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ 
+              borderColor: isScanning ? '#ef4444' : 'var(--border)',
+              boxShadow: isScanning ? '0 0 0 2px rgba(239, 68, 68, 0.2)' : 'none'
+            }}
           />
+          {isScanning && (
+            <div style={{ 
+              position: 'absolute', 
+              right: '10px', 
+              top: '50%', 
+              transform: 'translateY(-50%)',
+              color: '#ef4444',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}>
+              SCANNING
+            </div>
+          )}
         </div>
 
         {/* Category View or Product View */}

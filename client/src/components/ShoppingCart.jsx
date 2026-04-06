@@ -17,10 +17,11 @@ const ShoppingCart = ({
   discountType,
   setDiscountType,
   onInitiateCheckout,
-  isProcessing
+  isProcessing,
+  onClear
 }) => {
 
-  const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const subtotal = cart.reduce((total, item) => total + (parseFloat(item.price) * item.quantity), 0);
   const discountAmount = discountType === 'percentage' 
     ? (subtotal * discount) / 100 
     : discount;
@@ -54,7 +55,7 @@ const ShoppingCart = ({
             <div key={item.product_id} className="cart-item">
               <div className="item-info">
                 <div className="item-name">{item.product_name}</div>
-                <div className="item-price-unit">₵{Number(item.price).toFixed(2)} / unit</div>
+                <div className="item-price-unit">₵{parseFloat(item.price).toFixed(2)} / unit</div>
               </div>
               
               <div className="item-qty-controls">
@@ -68,7 +69,7 @@ const ShoppingCart = ({
               </div>
               
               <div className="item-total">
-                ₵{(item.price * item.quantity).toFixed(2)}
+                ₵{(parseFloat(item.price) * item.quantity).toFixed(2)}
               </div>
               
               <button className="item-remove" onClick={() => removeItem(item.product_id)}>
@@ -125,7 +126,7 @@ const ShoppingCart = ({
         <div className="cart-action-buttons">
           <button 
             className="btn-secondary btn-cancel"
-            onClick={() => {/* logic moved to parent usually */}}
+            onClick={onClear}
           >
             Clear
           </button>

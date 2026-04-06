@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Wallet, Ticket, Call, CloseSquare, ShieldDone } from 'react-iconly';
 import { usePaystackPayment } from 'react-paystack';
 
@@ -7,7 +7,6 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
   const [amountTendered, setAmountTendered] = useState('');
   const [referenceId, setReferenceId] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [changeDue, setChangeDue] = useState(0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Paystack configuration
@@ -22,7 +21,7 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
         { display_name: 'Payment Method', variable_name: 'payment_method', value: 'MOBILE_MONEY' }
       ]
     },
-    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_922ccd62233975c0edefdfb52ee3661c695a9b45'
+    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_live_fcef6f83711548a02a8ef7de0e3b98a95b815a31'
   };
 
   const initializePayment = usePaystackPayment(config);
@@ -45,29 +44,48 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
     // Payment was cancelled - don't clear cart
   };
 
-  useEffect(() => {
-    if (method === 'CASH') {
-      const tendered = Number(amountTendered);
-      if (tendered >= totalDue) {
-        setChangeDue(tendered - totalDue);
-      } else {
-        setChangeDue(0);
-      }
-    } else {
-      setAmountTendered(totalDue.toString());
-      setChangeDue(0);
-    }
-  }, [amountTendered, totalDue, method]);
+  // Calculate change due for cash payments
+  const changeDueValue = method === 'CASH' 
+    ? Number(amountTendered) >= totalDue 
+      ? Number(amountTendered) - totalDue 
+      : 0
+    : 0;
 
-  useEffect(() => {
+  // Reset form when modal opens - use state initializer pattern
+  const getInitialState = () => {
     if (isOpen) {
-      setMethod('CASH');
-      setAmountTendered(totalDue.toString());
-      setReferenceId('');
-      setCustomerPhone('');
-      setIsProcessingPayment(false);
+      return {
+        method: 'CASH',
+        amountTendered: totalDue.toString(),
+        referenceId: '',
+        customerPhone: '',
+        isProcessingPayment: false
+      };
     }
-  }, [isOpen, totalDue]);
+    return {
+      method,
+      amountTendered,
+      referenceId,
+      customerPhone,
+      isProcessingPayment
+    };
+  };
+
+  const initialState = getInitialState();
+
+  // Update state when modal opens
+  if (isOpen && (method !== initialState.method || amountTendered !== initialState.amountTendered || referenceId !== initialState.referenceId || customerPhone !== initialState.customerPhone || isProcessingPayment !== initialState.isProcessingPayment)) {
+    setMethod(initialState.method);
+    setAmountTendered(initialState.amountTendered);
+    setReferenceId(initialState.referenceId);
+    setCustomerPhone(initialState.customerPhone);
+    setIsProcessingPayment(initialState.isProcessingPayment);
+  }
+
+  // Auto-set amount for non-cash payments
+  if (method !== 'CASH' && amountTendered !== totalDue.toString()) {
+    setAmountTendered(totalDue.toString());
+  }
 
   if (!isOpen) return null;
 
@@ -194,7 +212,7 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
               <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(56, 189, 248, 0.05)', borderRadius: '12px', border: '1px dashed var(--primary-glow)' }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.25rem' }}>Change Due</div>
                 <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--success)' }}>
-                  ₵{changeDue.toFixed(2)}
+                  ₵{changeDueValue.toFixed(2)}
                 </div>
               </div>
             </div>

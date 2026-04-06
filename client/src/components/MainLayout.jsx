@@ -11,16 +11,34 @@ import {
   Search,
   ChevronRight,
   Category,
-  Setting,
-  CloseSquare
+  Setting
 } from 'react-iconly';
-import { Sun, Moon } from 'lucide-react';
 
 const HamburgerIcon = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="3" y1="12" x2="21" y2="12" />
     <line x1="3" y1="6" x2="21" y2="6" />
     <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
+const IconlyMoon = ({ size = 20, primaryColor = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={primaryColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21.5 14.0784C20.3 14.7084 18.9 15.0784 17.5 15.0784C12.8 15.0784 9 11.2784 9 6.5784C9 4.7784 9.6 3.0784 10.6 1.6784C6.1 2.3784 2.5 6.2784 2.5 11.0784C2.5 16.3784 6.8 20.6784 12.1 20.6784C16.5 20.6784 20.1 17.5784 21.5 14.0784Z" stroke={primaryColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const IconlySun = ({ size = 20, primaryColor = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={primaryColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="5" />
+    <line x1="12" y1="1" x2="12" y2="3" />
+    <line x1="12" y1="21" x2="12" y2="23" />
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+    <line x1="1" y1="12" x2="3" y2="12" />
+    <line x1="21" y1="12" x2="23" y2="12" />
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
   </svg>
 );
 
@@ -66,8 +84,9 @@ const MainLayout = ({ children }) => {
     <div className={`app-wrapper ${isCollapsed ? 'collapsed' : ''}`}>
       <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
         
-        {/* Toggle Button at the top */}
-        <div style={{ display: 'flex', justifyContent: isCollapsed ? 'center' : 'flex-end', padding: isCollapsed ? '20px 0 10px 0' : '20px 20px 10px 0' }}>
+        {/* Toggle Button and Logo at the top */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: isCollapsed ? 'center' : 'space-between', padding: isCollapsed ? '25px 0 10px 0' : '25px 15px 10px 20px' }}>
+          {!isCollapsed && <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--primary)', letterSpacing: '1px' }}>POS_EDYTH</h1>}
           <button 
             onClick={handleCollapse} 
             title={isCollapsed ? 'Expand Menu' : 'Close Menu'}
@@ -82,12 +101,13 @@ const MainLayout = ({ children }) => {
                width: '40px',
                height: '40px',
                borderRadius: '8px',
-               transition: 'background 0.2s'
+               transition: 'background 0.2s',
+               marginLeft: isCollapsed ? '0' : '10px'
             }}
             onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
             onMouseOut={(e) => e.currentTarget.style.background = 'none'}
           >
-            {isCollapsed ? <HamburgerIcon size={24} /> : <CloseSquare set="light" size={24} />}
+            <HamburgerIcon size={24} />
           </button>
         </div>
 
@@ -185,19 +205,17 @@ const MainLayout = ({ children }) => {
         {/* Footer: Theme + Logout */}
         <div className="sidebar-footer">
           <div className="nav-item">
-            <button onClick={toggleTheme} className="nav-link" data-tooltip="Theme" style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button onClick={toggleTheme} className="nav-link" data-tooltip="Theme" style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span className="nav-icon">
-                  {theme === 'light' ? <Sun size={20} color="currentColor" /> : <Moon size={20} color="currentColor" />}
+                  {theme === 'light' ? (
+                    <IconlyMoon size={20} primaryColor="currentColor" />
+                  ) : (
+                    <IconlySun size={20} primaryColor="currentColor" />
+                  )}
                 </span>
-                <span className="nav-text">Toggle Theme</span>
+                <span className="nav-text">Theme</span>
               </div>
-              
-              {!isCollapsed && (
-                <div style={{ width: '32px', height: '18px', borderRadius: '10px', background: theme === 'light' ? 'var(--primary)' : 'rgba(255,255,255,0.1)', position: 'relative', transition: 'var(--transition)' }}>
-                  <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: 'white', position: 'absolute', top: '2px', left: theme === 'light' ? '16px' : '2px', transition: 'left 0.2s ease-out' }}></div>
-                </div>
-              )}
             </button>
           </div>
 
