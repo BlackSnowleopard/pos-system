@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { AuthContext } from '../commons/AuthContext';
 import ShoppingCart from '../components/ShoppingCart';
 import PaymentModal from '../components/PaymentModal';
@@ -130,15 +130,70 @@ const SalesPage = () => {
     });
   }, []);
 
-  // --- GLOBAL BARCODE SCANNER INTERCEPTOR ---
-  useEffect(() => {
-    let barcodeBuffer = '';
-    let lastKeyTime = Date.now();
-    let scanningTimeout = null;
+  // --- BULLETPROOF BARCODE SCANNER ---
+  const barcodeBufferRef = useRef('');
+  const lastKeyTimeRef = useRef(Date.now());
+  const scanningTimeoutRef = useRef(null);
+  const autoProcessTimeoutRef = useRef(null);
+  
+  // Keep refs of dependencies so the listener never has to re-attach
+  const allProductsRef = useRef(allProducts);
+  const handleAddToCartRef = useRef(handleAddToCart);
+  const isScanningRef = useRef(isScanning);
+  const tokenRef = useRef(token);
 
+  useEffect(() => {
+    allProductsRef.current = allProducts;
+    handleAddToCartRef.current = handleAddToCart;
+    isScanningRef.current = isScanning;
+    tokenRef.current = token;
+  }, [allProducts, handleAddToCart, isScanning, token]);
+
+  const processScannedCode = async (scannedCode) => {
+    const code = scannedCode.trim();
+    if (code.length < 3) return;
+
+    console.log(`[Scanner] Finalizing: "${code}"`);
+    
+    // 1. Local Search
+    let match = allProductsRef.current.find(p => 
+      (p.barcode && p.barcode.trim() === code) || 
+      (p.product_id && p.product_id.toString() === code)
+    );
+    
+    // 2. Database Fallback
+    if (!match) {
+      console.log(`[Scanner] Local match failed for "${code}". Searching database...`);
+      try {
+        const headers = { 'Authorization': `Bearer ${tokenRef.current}` };
+        const response = await fetch(`http://localhost:5000/api/products?search=${encodeURIComponent(code)}`, { headers });
+        if (response.ok) {
+          const results = await response.json();
+          match = results.find(p => p.barcode === code || p.product_id?.toString() === code);
+          if (match) {
+            console.log(`[Scanner] Database match found: ${match.product_name}`);
+            setAllProducts(prev => [match, ...prev]);
+          }
+        }
+      } catch (err) { console.error('[Scanner] DB Error:', err); }
+    }
+
+    if (match) {
+      console.log(`✓ Added to Cart: ${match.product_name}`);
+      handleAddToCartRef.current(match);
+      setSearchQuery('');
+    } else {
+      console.warn(`⚠️ Product not found: "${code}"`);
+      alert(`Product not found: "${code}"\n\nPlease ensure it's registered in Inventory.`);
+    }
+    
+    barcodeBufferRef.current = '';
+    setIsScanning(false);
+  };
+
+  useEffect(() => {
     const handleKeyDown = (e) => {
-      // Only block scanning when user is actively typing in form fields
-      // Allow global scanning everywhere else including when search bar is focused
+      // Ignore irrelevant inputs
       if (e.target.tagName === 'TEXTAREA') return;
       if (e.target.tagName === 'INPUT' && 
           e.target.type === 'text' && 
@@ -147,62 +202,53 @@ const SalesPage = () => {
           e.target.placeholder !== '🔴 Scanning...') return;
 
       const currentTime = Date.now();
+      const timeDiff = currentTime - lastKeyTimeRef.current;
       
-      // Show scanning indicator when rapid keystrokes detected
-      if (!isScanning && currentTime - lastKeyTime < 50) {
+      // Clear any existing auto-process or UI timeouts
+      if (autoProcessTimeoutRef.current) clearTimeout(autoProcessTimeoutRef.current);
+      if (scanningTimeoutRef.current) clearTimeout(scanningTimeoutRef.current);
+
+      // detect scanner (fast sequence)
+      if (!isScanningRef.current && timeDiff < 60) {
         setIsScanning(true);
-        // Clear any existing timeout
-        if (scanningTimeout) clearTimeout(scanningTimeout);
-        // Auto-hide scanning indicator after 2 seconds of inactivity
-        scanningTimeout = setTimeout(() => {
-          setIsScanning(false);
-          barcodeBuffer = '';
-        }, 2000);
       }
       
-      // Phone scanner emulators fire keystrokes typically within 10-30ms.
-      // If gap exceeds 100ms, it's likely a human typing, so we reset the buffer.
-      if (currentTime - lastKeyTime > 100) {
-        barcodeBuffer = '';
-        setIsScanning(false);
-        if (scanningTimeout) clearTimeout(scanningTimeout);
+      // Auto-hide scanning UI indicator
+      scanningTimeoutRef.current = setTimeout(() => setIsScanning(false), 2000);
+
+      // Human reset (long gap when NOT scanning)
+      if (timeDiff > 250 && !isScanningRef.current) {
+        barcodeBufferRef.current = '';
       }
-      lastKeyTime = currentTime;
+      
+      lastKeyTimeRef.current = currentTime;
 
       if (e.key === 'Enter') {
-        if (barcodeBuffer.length > 2) { // Prevents accidental empty enters
-          const scannedCode = barcodeBuffer.trim();
-          // Find matching product by barcode or product ID
-          const match = allProducts.find(p => p.barcode === scannedCode || p.product_id.toString() === scannedCode);
-          
-          if (match) {
-            console.log(`✓ Barcode scanned: ${scannedCode} - Added ${match.product_name} to cart`);
-            handleAddToCart(match);
-            // Clear search field if it has the scanned barcode
-            if (searchQuery === scannedCode) {
-              setSearchQuery('');
-            }
-          } else {
-            console.warn(`⚠️ Scanned barcode not found in catalog: "${scannedCode}" (length: ${scannedCode.length})`);
-            console.log('Available barcodes:', allProducts.map(p => `${p.product_name}: ${p.barcode}`));
-            alert(`Product not found for barcode: "${scannedCode}"\n\nCheck barcode length and try again.`);
-          }
-        }
-        barcodeBuffer = '';
-        setIsScanning(false);
-        if (scanningTimeout) clearTimeout(scanningTimeout);
+        processScannedCode(barcodeBufferRef.current);
         return;
       }
 
-      // Compile printable single-character keys into the buffer string
       if (e.key.length === 1) {
-        barcodeBuffer += e.key;
+        barcodeBufferRef.current += e.key;
+        
+        // Auto-process fallback (in case phone doesn't send Enter)
+        // Wait 350ms of silence before assuming the scan is done
+        autoProcessTimeoutRef.current = setTimeout(() => {
+          if (barcodeBufferRef.current.length >= 3) {
+            console.log('[Scanner] Auto-processing due to silence/timeout');
+            processScannedCode(barcodeBufferRef.current);
+          }
+        }, 350);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [allProducts, handleAddToCart, isScanning, searchQuery]);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (scanningTimeoutRef.current) clearTimeout(scanningTimeoutRef.current);
+      if (autoProcessTimeoutRef.current) clearTimeout(autoProcessTimeoutRef.current);
+    };
+  }, []); // LISTENER NEVER RE-ATTACHES
 
   const handleUpdateQuantity = (productId, change) => {
     setCart(prev => prev.map(item => {

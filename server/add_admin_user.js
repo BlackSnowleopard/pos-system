@@ -6,7 +6,7 @@ async function addAdminUser() {
     const email = 'tsegahesmund@gmail.com';
     const name = 'Tsega Hesmund';
     const role = 'Administrator';
-    const password = 'admin123'; // You can change this
+    const password = 'admin123'; // I can change this
     
     // Hash the password
     const salt = await bcrypt.genSalt(10);
