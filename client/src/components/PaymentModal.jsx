@@ -33,11 +33,11 @@ const PaymentModal = ({ isOpen, onClose, onConfirm, totalDue }) => {
     try {
       setIsProcessingPayment(true);
       
-      const verifyResponse = await fetch('/api/payments/verify', {
+      const verifyResponse = await fetch('http://localhost:5000/api/payments/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('posToken')}`
         },
         body: JSON.stringify({ reference: response.reference })
       });
